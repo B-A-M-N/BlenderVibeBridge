@@ -50,5 +50,13 @@ This document defines the non-negotiable structural constraints for AI-generated
 ## 11. Identity Stability
 *   **References**: `bpy.types.Object` references in Python can become invalid if the object is deleted or the file is reloaded. Use names or persistent pointers if available/safe.
 
+## 12. No Blender Tricks (Persistence Ban)
+*   **No Handlers**: Registration of `bpy.app.handlers` (e.g., `load_post`, `save_pre`, `frame_change_post`) is STRICTLY FORBIDDEN.
+*   **No Background Timers**: Unauthorized use of `bpy.app.timers` to create persistent background processes is blocked.
+
+## 13. Idempotence & Read-Before-Write
+*   **Atomic Idempotence**: All mutation tools MUST be idempotent. Repeating a request should have no side effects beyond the first successful application.
+*   **RBW Loop**: Every mutation must follow the sequence: `Inspect (Tool)` -> `Validate (Logic)` -> `Mutate (Tool)` -> `Verify (Tool)`.
+
 ## The Meta-Rule
 If a proposed solution is unusually short, clever, or bypasses a limitation, assume it is wrong. Prioritize safety and explicit verification over brevity.

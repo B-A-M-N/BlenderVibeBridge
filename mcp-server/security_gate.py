@@ -74,6 +74,11 @@ class SecurityGate:
         'wm.path_open', 'wm.shell_open', 'wm.url_open'
     }
 
+    # --- Blender Persistence Ban ---
+    BLENDER_FORBIDDEN_ATTRIBUTES = {
+        'handlers', 'timers'
+    }
+
     @classmethod
     def check_python(cls, code):
         # 0. Check Whitelist first
@@ -137,7 +142,7 @@ class SecurityGate:
                 if func_name in cls.PYTHON_FORBIDDEN_FUNCTIONS:
                     errors.append(f"Security Violation: Use of forbidden function '{func_name}'")
                 
-                # Blender Operator Check (bpy.ops.wm.xxx)
+                # Blender Operator & Persistence Check
                 if isinstance(node.func, ast.Attribute):
                     path = cls._resolve_full_path(node.func)
                     if path.startswith("bpy.ops."):
@@ -145,6 +150,11 @@ class SecurityGate:
                         if op_full in cls.BLENDER_FORBIDDEN_OPERATORS:
                             errors.append(f"Security Violation: Use of forbidden Blender operator 'bpy.ops.{op_full}'")
                     
+                    if "bpy.app." in path:
+                        attr = path.split('.')[-1]
+                        if attr in cls.BLENDER_FORBIDDEN_ATTRIBUTES:
+                            errors.append(f"Security Violation: Persistent Blender trick detected: '{path}'")
+
                     # Special check for ShaderNodeScript (OSL) - catch any .nodes.new()
                     if path.endswith(".nodes.new") or path.endswith(".nodes.add"):
                         for arg in node.args:
@@ -171,10 +181,15 @@ class SecurityGate:
                             if not cls._is_path_safe(arg.value):
                                 errors.append(f"Security Violation: Access to forbidden path '{arg.value}' blocked.")
 
-            # Check for Internal Access
+            # Check for Internal Access & Persistence Ban
             if isinstance(node, ast.Attribute):
                 if node.attr in cls.PYTHON_FORBIDDEN_ATTRIBUTES:
                     errors.append(f"Security Violation: Access to internal attribute '{node.attr}' forbidden.")
+                
+                # Persistence check for handlers/timers
+                path = cls._resolve_full_path(node)
+                if any(p in path for p in ["bpy.app.handlers", "bpy.app.timers"]):
+                    errors.append(f"Security Violation: Persistent Blender trick detected: '{path}'")
 
             # Secret Detection
             if isinstance(node, ast.Assign):

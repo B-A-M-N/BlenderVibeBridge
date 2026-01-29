@@ -26,6 +26,24 @@ mcp = FastMCP("BlenderVibeBridge")
 BLENDER_API_URL = "http://127.0.0.1:22000"
 VIBE_TOKEN = "VIBE_777_SECURE"
 SESSION_ID = None
+AUDIT_LOG_PATH = "/home/bamn/BlenderVibeBridge/logs/vibe_audit.jsonl"
+
+# Ensure logs directory exists
+os.makedirs(os.path.dirname(AUDIT_LOG_PATH), exist_ok=True)
+
+class AuditLogger:
+    @staticmethod
+    def log_mutation(method, path, data, response):
+        entry = {
+            "timestamp": datetime.datetime.now().isoformat(),
+            "method": method,
+            "path": path,
+            "request_data": data,
+            "response": response,
+            "capability": data.get("capability", "UNKNOWN") if data else "UNKNOWN"
+        }
+        with open(AUDIT_LOG_PATH, "a") as f:
+            f.write(json.dumps(entry) + "\n")
 
 class SecurityMonitor:
     def __init__(self, threshold=3):
@@ -104,6 +122,15 @@ def blender_request(method, path, data=None, is_mutation=False):
 
     try:
         resp = requests.request(method, f"{BLENDER_API_URL}{path}", json=data, headers=headers, timeout=10)
+        
+        # Audit Log for Mutations
+        if is_mutation:
+            try:
+                resp_json = resp.json()
+            except:
+                resp_json = {"raw": resp.text}
+            AuditLogger.log_mutation(method, path, data, resp_json)
+
         new_sid = resp.headers.get("X-Vibe-Session")
         if new_sid and SESSION_ID and new_sid != SESSION_ID:
             SESSION_ID = new_sid
