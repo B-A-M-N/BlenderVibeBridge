@@ -1,0 +1,24 @@
+# BlenderVibeBridge Git Ignore
+
+# Avatar-Specific Scripts & Reports
+avatar_scripts/
+avatar_assets/
+
+# Logs & Temporary Files
+*.log
+*.tmp
+__pycache__/
+.gemini_security/
+
+# Local Blender Artifacts
+*.blend1
+*.blend2
+vibe_capture.png
+current_view.png
+
+# System / IDE
+.DS_Store
+.vscode/
+.idea/
+node_modules/
+venv/

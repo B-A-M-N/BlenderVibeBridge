@@ -1,0 +1,22 @@
+{
+  "EXTO_Mesh_Head": {
+    "role": "FIDELITY_CORE",
+    "description": "Primary face and visemes. Protect from decimation."
+  },
+  "EXTO_Mesh_Body": {
+    "role": "BASE_GEOMETRY",
+    "description": "Main skin mesh. Requires loop integrity."
+  },
+  "EXTO_RENDER_CLOTHING_BASE": {
+    "role": "ASSET_VARIATION",
+    "description": "Main clothing layer."
+  },
+  "EXTO_Mesh_Tail": {
+    "role": "SECONDARY_ASSET",
+    "description": "Organic tail accessory."
+  },
+  "EXTO_RENDER_HARDWARE": {
+    "role": "HARD_SURFACE",
+    "description": "Mechanical straps and chains."
+  }
+}
