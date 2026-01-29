@@ -1,0 +1,29 @@
+# Firejail profile for BlenderVibeBridge
+# Run with: firejail --profile=security/blender_vibe_bridge.local python3 server.py
+
+# Security Hardening
+include python.profile
+include whitelist-common.inc
+
+# Network: allow local traffic only
+netfilter
+net localhost
+
+# Filesystem Whitelisting
+whitelist /home/bamn/BlenderVibeBridge
+read-only /home/bamn/BlenderVibeBridge
+read-write /home/bamn/BlenderVibeBridge/logs
+read-write /home/bamn/BlenderVibeBridge/metadata
+read-write /home/bamn/BlenderVibeBridge/server.log
+
+# Disable dangerous features
+nogroups
+nonewprivs
+noroot
+nosound
+notv
+novideo
+protocol unix,inet,inet6
+seccomp
+shell none
+tracelog

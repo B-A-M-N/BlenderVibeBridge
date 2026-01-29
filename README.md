@@ -100,14 +100,27 @@ If you are evaluating this project as an engineer or hiring manager, this reposi
 *   **`create_3d_annotation`**: 3D markup for AI-to-Human communication.
 *   **`secure_write_file`**: AST-validated Python/C# file writing.
 
----
+## 🛡️ Iron Box Security
+The bridge is hardened via three distinct layers:
+1.  **AST Auditing**: All incoming Python code is parsed and scanned for forbidden calls (e.g., `os.system`, `subprocess`).
+2.  **Asset Scanning**: Binary assets are greedily scanned for embedded scripts before linking.
+3.  **OS Sandboxing**: Optional kernel-level isolation.
 
-## 🛡️ The "Iron Box" Safety Model
-Every tool is governed by **Infrastructure-level trust**:
-*   **AST Auditing**: Generated code is scanned for forbidden modules (`os`, `subprocess`) and functions (`exec`).
-*   **Panic Mode**: 3 security violations trigger a **Read-Only lockdown**.
-*   **Hardware Railings**: Subdiv levels > 3 and light energy > 10k are blocked at the kernel level.
-*   **Main-Thread Dispatch**: Prevents Blender crashes by marshaling all calls to `bpy.app.timers`.
+### OS-Level Security Layers
+You can enable additional protection by setting environment variables before running `start_bridge.sh`:
+
+| Layer | Variable | Description |
+| :--- | :--- | :--- |
+| **Bubblewrap** | `USE_BWRAP=true` | Uses Linux namespaces to isolate the filesystem. |
+| **Firejail** | `USE_FIREJAIL=true` | Applies restricted security profiles and network filtering. |
+| **AppArmor** | `USE_APPARMOR=true` | Kernel-level Mandatory Access Control (MAC). |
+
+**Usage Example:**
+```bash
+USE_BWRAP=true ./start_bridge.sh
+```
+
+*Note: AppArmor requires loading the profile once via `sudo apparmor_parser -r security/blender_vibe_bridge.apparmor`.*
 
 ---
 

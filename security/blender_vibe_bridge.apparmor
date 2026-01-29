@@ -1,0 +1,29 @@
+# AppArmor profile for BlenderVibeBridge
+# Load with: sudo apparmor_parser -r security/blender_vibe_bridge.apparmor
+
+profile blender_vibe_bridge /usr/bin/python3* {
+  # Include standard abstractions
+  #include <abstractions/base>
+  #include <abstractions/python>
+  #include <abstractions/nameservice>
+
+  # Allow project directory access
+  /home/bamn/BlenderVibeBridge/** r,
+  /home/bamn/BlenderVibeBridge/logs/*.jsonl w,
+  /home/bamn/BlenderVibeBridge/server.log w,
+  /home/bamn/BlenderVibeBridge/metadata/*.json rw,
+
+  # Allow network access for local bridge
+  network inet stream,
+  network inet6 stream,
+
+  # Deny sensitive paths explicitly
+  deny /etc/shadow r,
+  deny /root/** r,
+  deny /home/bamn/.ssh/** r,
+  deny /home/bamn/.bash_history r,
+
+  # Allow specific python modules
+  /usr/lib/python3*/** r,
+  /usr/local/lib/python3*/** r,
+}
