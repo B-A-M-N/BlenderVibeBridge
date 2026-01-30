@@ -1,3 +1,15 @@
+# BlenderVibeBridge: Dual-License & Maintenance Agreement (v1.2)
+# Copyright (C) 2026 B-A-M-N (The "Author")
+#
+# This software is distributed under a Dual-Licensing Model:
+# 1. THE OPEN-SOURCE PATH: GNU AGPLv3 (see LICENSE for details)
+# 2. THE COMMERCIAL PATH: "WORK-OR-PAY" MODEL
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+
 # Firejail profile for BlenderVibeBridge
 # Run with: firejail --profile=security/blender_vibe_bridge.local python3 server.py
 

@@ -1,3 +1,15 @@
+# BlenderVibeBridge: Dual-License & Maintenance Agreement (v1.2)
+# Copyright (C) 2026 B-A-M-N (The "Author")
+#
+# This software is distributed under a Dual-Licensing Model:
+# 1. THE OPEN-SOURCE PATH: GNU AGPLv3 (see LICENSE for details)
+# 2. THE COMMERCIAL PATH: "WORK-OR-PAY" MODEL
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+
 import sys
 import requests
 import base64
@@ -176,14 +188,14 @@ def blender_request(method, path, data=None, is_mutation=False):
 
 @mcp.tool()
 def validate_humanoid_rig(armature_name: str) -> str:
-    """THE DOCTOR: Validates if a rig follows the standard Unity Humanoid bone structure.
-    Essential for ensuring animations work correctly in VRChat."""
+    """THE DOCTOR: Validates if a rig follows the standard Humanoid bone structure.
+    Essential for ensuring animations work correctly in production environments."""
     return str(blender_request("POST", "/command", data={"type": "unity_op", "action": "validate_humanoid", "target": armature_name}, is_mutation=True))
 
 @mcp.tool()
 def optimize_avatar_mesh(obj_name: str, ratio: float = 0.5) -> str:
     """THE POLISHER: Reduces the polycount of a mesh by a specific ratio (0.0 to 1.0).
-    Use this to create 'Quest-Ready' versions of high-poly avatars."""
+    Use this to create optimized versions of high-poly assets."""
     return str(blender_request("POST", "/command", data={"type": "unity_op", "action": "optimize_avatar", "target": obj_name, "ratio": ratio}, is_mutation=True))
 
 @mcp.tool()
@@ -468,25 +480,25 @@ def audit_external_dependencies() -> str:
 def validate_export_contract() -> str:
     """THE GATEKEEPER: Checks scene validity before Export.
     Flags: Unapplied Scale, Non-Zero Rotation, N-Gons, Loose Geometry.
-    Use this BEFORE exporting to Unity/Unreal."""
+    Use this BEFORE exporting to external engines."""
     return str(blender_request("POST", "/query", data={"type": "audit_op", "action": "validate_export"}, is_mutation=False))
 
 @mcp.tool()
 def audit_rig_integrity() -> str:
     """THE CHIROPRACTOR: Scans all bones and constraints for NaN values, roll corruption, or broken hierarchies.
-    Essential for ensuring animations play correctly in Unity."""
+    Essential for ensuring animations play correctly after export."""
     return str(blender_request("POST", "/query", data={"type": "audit_op", "action": "audit_rig"}, is_mutation=False))
 
 @mcp.tool()
 def audit_shape_key_integrity() -> str:
     """THE VISEME GUARD: Scans all meshes for broken or basis-mismatched shape keys.
-    Prevents facial expressions from vanishing during Unity import."""
+    Prevents facial expressions from vanishing during asset import in other engines."""
     return str(blender_request("POST", "/query", data={"type": "audit_op", "action": "audit_shape_keys"}, is_mutation=False))
 
 @mcp.tool()
 def audit_vertex_groups() -> str:
     """THE WEIGHTING GUARD: Scans for vertices that have NO weight assignments on rigged meshes.
-    Prevents the 'Spiking Mesh' bug in Unity."""
+    Prevents the 'Spiking Mesh' bug during deformation."""
     return str(blender_request("POST", "/query", data={"type": "audit_op", "action": "audit_weights"}, is_mutation=False))
 
 @mcp.tool()

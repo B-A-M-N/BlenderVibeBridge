@@ -1,3 +1,15 @@
+# BlenderVibeBridge: Dual-License & Maintenance Agreement (v1.2)
+# Copyright (C) 2026 B-A-M-N (The "Author")
+#
+# This software is distributed under a Dual-Licensing Model:
+# 1. THE OPEN-SOURCE PATH: GNU AGPLv3 (see LICENSE for details)
+# 2. THE COMMERCIAL PATH: "WORK-OR-PAY" MODEL
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+
 bl_info = {
     "name": "BlenderVibeBridge",
     "author": "Vibe Bridge Team",
@@ -159,8 +171,8 @@ class TransactionManager:
             bpy.ops.ed.undo()
         vibe_log("TRANSACTION: ROLLED BACK")
 
-# --- Unity & Avatar Pipeline ---
-class UnityPipeline:
+# --- Production & Avatar Pipeline ---
+class ProductionPipeline:
     @staticmethod
     def validate_humanoid(armature_name):
         obj = bpy.data.objects.get(armature_name)
@@ -333,11 +345,10 @@ class ModelingKernel:
         elif cmd == "exec_script":
             # RE-VALIDATE IN KERNEL (Defense in depth)
             try:
-                sys.path.append(os.path.join(BASE_PATH, "mcp-server"))
                 from security_gate import SecurityGate
                 violations = SecurityGate.check_python(data.get("script"))
                 if violations: raise Exception(f"Security Violation: {violations[0]}")
-            except (ImportError, Exception) as e: 
+            except Exception as e: 
                 vibe_log(f"CRITICAL: Security Audit Failure: {e}")
                 raise Exception(f"Infrastructure failure (Security Audit Required): {e}")
 
@@ -626,13 +637,12 @@ class ModelingKernel:
                                                     return [bpy.path.abspath(img.filepath) for img in bpy.data.images if img.filepath and not os.path.exists(bpy.path.abspath(img.filepath))]
                                                 return "OK"
                                     
-                                            elif cmd == "unity_op":
-                                                action = data.get("action")
-                                                if action == "validate_humanoid": return UnityPipeline.validate_humanoid(data.get("target"))
-                                                elif action == "optimize_avatar": return UnityPipeline.optimize_mesh(data.get("target"), float(data.get("ratio", 0.5)))
-                                                return "OK"
-                                    
-                                            elif cmd == "viseme_op":
+                                                    elif cmd == "unity_op":
+                                                        action = data.get("action")
+                                                        if action == "validate_humanoid": return ProductionPipeline.validate_humanoid(data.get("target"))
+                                                        elif action == "optimize_avatar": return ProductionPipeline.optimize_mesh(data.get("target"), float(data.get("ratio", 0.5)))
+                                                        return "OK"
+                                                                                        elif cmd == "viseme_op":
                                                 obj = bpy.data.objects.get(data.get("name"))
                                                 if obj and obj.type == 'MESH':
                                                     if not obj.data.shape_keys: obj.shape_key_add(name="Basis")
@@ -796,6 +806,10 @@ class VibeDataHandler(http.server.SimpleHTTPRequestHandler):
 
 def bootstrap():
     ctx = get_ctx()
+    # Ensure security gate is accessible to the kernel
+    mcp_path = os.path.join(BASE_PATH, "mcp-server")
+    if mcp_path not in sys.path: sys.path.append(mcp_path)
+
     if ctx.get("server"): 
         try: ctx["server"].shutdown(); ctx["server"].server_close()
         except: pass

@@ -1,12 +1,15 @@
 # BlenderVibeBridge Git Ignore
 
-# Avatar-Specific Scripts & Reports
+# Production Vault (Private Assets & Scripts)
+production_vault/
 avatar_scripts/
 avatar_assets/
+captures/
 
 # Logs & Temporary Files
 *.log
 *.tmp
+*.png
 __pycache__/
 .gemini_security/
 

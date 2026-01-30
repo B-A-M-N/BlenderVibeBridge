@@ -76,7 +76,7 @@ graph LR
 
 The bridge provides the agent with "eyes" and "hands" optimized for technical artistry:
 
-*   **Unity Pipeline**: One-click Humanoid rig validation, mesh decimation, and viseme generation.
+*   **Production Pipeline**: One-click Humanoid rig validation, mesh decimation, and viseme generation.
 *   **Geometry Kernel**: Deep inspection of N-Gons, non-manifold edges, and vertex stats.
 *   **Technical Art**: Automated creation of Shader Graphs and Geometry Node trees.
 *   **Simulation Power**: One-click setup for Rigid Body, Cloth, and Collision physics.

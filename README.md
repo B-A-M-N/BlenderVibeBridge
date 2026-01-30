@@ -165,59 +165,40 @@ I specialize in **Local LLM applications and secure AI-Human interfaces**. This 
 
 ## ⚖️ License & Legal Liability
 
-
-
-### Dual-License & Maintenance Agreement (v1.1)
-
+### Dual-License & Maintenance Agreement (v1.2)
 Copyright (C) 2026 B-A-M-N (The "Author")
 
-
-
-This project is distributed under a **Dual-Licensing Model**. By using this software, you agree to be bound by one of the two licensing paths described below.
-
-
+This project is distributed under a **Dual-Licensing Model**. By using this software, you agree to be bound by the terms described below.
 
 #### 1. THE OPEN-SOURCE PATH: GNU AGPLv3
-
 For non-commercial use, hobbyists, and open-source contributors.
+The core bridging logic of BlenderVibeBridge is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License (AGPLv3) as published by the Free Software Foundation. 
 
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License (AGPLv3) as published by the Free Software Foundation. 
-
-
+**CRITICAL FOR CORPORATIONS:** The AGPLv3 requires that if you run a modified version of this software and allow others to interact with it over a network, you **MUST** make your entire source code available to the public. If you cannot or will not share your source code, you **MAY NOT** use this license and **MUST** pursue the Commercial Path below.
 
 #### 2. THE COMMERCIAL PATH: "WORK-OR-PAY" MODEL
+For entities generating revenue, commercial studios, or those who wish to keep their modifications private. Pursuant to Section 7 of the GNU AGPLv3, commercial use requires satisfying **ONE** of the following:
+*   **Maintenance Contribution**: Documented and verified "Significant Maintenance Contributions" to the project.
+*   **License Fee**: Payment of a stipulated commercial license fee.
+*   **Discretionary Waiver**: A written waiver granted by the Author at their sole discretion.
 
-For entities generating revenue, commercial studios, or those who wish to keep their modifications private. Pursuant to Section 7 of the GNU AGPLv3, commercial use requires either **Significant Maintenance Contributions** or payment of a **Commercial License Fee**.
+#### 3. CONTRIBUTOR LICENSE AGREEMENT (CLA) & PROVENANCE
+By submitting a contribution (pull request, code snippet, bug fix, or documentation) to this project, you grant the Author a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright license to use, reproduce, prepare derivative works of, publicly display, and **sublicense** your contributions in both the open-source and commercial versions of the software.
 
-
-
-#### 3. CONTRIBUTIONS & GRANT OF RIGHTS
-
-By submitting a contribution (pull request, code snippet, bug fix, or documentation) to this project, you grant the Author (B-A-M-N) a non-exclusive, irrevocable, worldwide, royalty-free license to use, reproduce, modify, and distribute your contribution under any license model the Author chooses (including the Open-Source and Commercial paths defined above). 
-
-The Author reserves the right to incorporate and use all contributions without the obligation to track down, notify, or seek further approval from the original contributor for future licensing changes or commercial applications. Submission of a contribution constitutes acceptance of these terms.
-
-
+**TRACKING WAIVER**: This grant is made without the requirement for the Author to track, notify, or seek further approval from the Contributor for any future use. You represent that you are legally entitled to grant this license and that your contributions do not violate any third-party rights.
 
 ---
 
-
-
 ### ⚠️ LIABILITY LIMITATION, INDEMNITY & AI DISCLAIMER
 
-
-
-1. **NO WARRANTY**: This software is provided "AS IS." The Author makes no representations concerning the safety, stability, or non-destructive nature of AI-interpreted operations.
-
-2. **AI NON-DETERMINISM**: This software translates natural language via LLMs into Blender mutations. AI is non-deterministic; the Author is not liable for "hallucination drift," unintended asset deletion, or scene corruption resulting from AI interpretation.
-
-3. **HUMAN-IN-THE-LOOP MANDATE**: All AI-suggested mutations are considered "Proposed" until a Human User executes a "Finalize" or "Undo" check. THE USER ACCEPTS FULL LEGAL AND TECHNICAL RESPONSIBILITY FOR ANY CODE OR MUTATION THEY ALLOW THE AI TO EXECUTE.
-
+1. **NO WARRANTY**: This software is provided "AS IS." The Author is not responsible for the non-deterministic nature of AI-interpreted operations.
+2. **AI NON-DETERMINISM**: The Author is not liable for "hallucination drift," unintended asset deletion, project corruption, or "vibe loss" resulting from LLM-to-Blender translations.
+3. **HUMAN-IN-THE-LOOP MANDATE**: All AI-suggested mutations are considered "Proposed" until a Human User executes a "Finalize" check. THE USER ACCEPTS FULL LEGAL AND TECHNICAL RESPONSIBILITY FOR ANY CODE OR MUTATION THEY ALLOW THE AI TO EXECUTE.
 4. **INDEMNIFICATION**: You agree to indemnify, defend, and hold harmless the Author from and against any and all claims, liabilities, damages, and expenses (including attorney fees) arising from your use of the software, your breach of this license, or any assets produced using this software.
-
-5. **PLATFORM COMPLIANCE**: The Author is NOT responsible for any violations of Third-Party Terms of Service (e.g., VRChat TOS, Blender EULA). Use of this tool is at the User's sole risk.
-
-6. **LIMITATION OF LIABILITY**: TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES (INCLUDING LOSS OF DATA, PROFITS, OR "VIBE") ARISING OUT OF THE USE OR INABILITY TO USE THIS SOFTWARE.
+5. **THIRD-PARTY IP & EULA COMPLIANCE**: 
+    *   **NON-AFFILIATION**: BlenderVibeBridge is an independent project and is **not affiliated with, endorsed by, or sponsored by** the Blender Foundation or any other engine provider.
+    *   **USER RESPONSIBILITY**: Users are solely responsible for ensuring their use complies with the End User License Agreements (EULA) and Terms of Service of Blender and any assets used.
+6. **LIMITATION OF LIABILITY**: TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES (INCLUDING LOSS OF DATA, PROFITS, OR CREATIVE FLOW).
 
 
 
