@@ -38,39 +38,37 @@ Humans have a mental map of reality (e.g., you know that **Nails are on Fingers*
 
 **BlenderVibeBridge** is a high-integrity interface that transforms Blender into a **Governed Geometry Kernel**. Instead of asking an AI to generate fragile Python scripts that might crash or exploit the system, it exposes a **Mechanistic Interface**—a set of deterministic tools to query state, inspect geometry, and perform non-destructive modifications through a strictly regulated pipe.
 
-### Core Architecture
+### Core Architecture (v1.2.1)
 
 ```mermaid
 graph LR
-    A[AI Agent] <-->|MCP Stdio/SSE| B[MCP Server]
-    B <-->|HTTP JSON (Local)| C[Blender Add-on]
+    A[AI Agent] <-->|Command Plane: 22000| B[MCP Server]
+    A <-->|Vision Plane: 22001| E[Vision MCP]
+    B <-->|Airlock Plane: Files| C[Blender Kernel]
+    E <-->|Data Stream| C
     C -->|Main-Thread Dispatch| D[bpy API]
 ```
 
 1.  **AI Agent (Technical Director)**: Issues high-level intents via MCP tool calls.
-2.  **MCP Server (Protocol Firewall)**: Python server that validates intents, enforces behavioral circuit breakers, and manages the session lifecycle.
-3.  **Blender Add-on (The Kernel)**: A background HTTP server inside Blender that queues commands and executes them on the main thread via `bpy.app.timers`.
+2.  **MCP Server (Protocol Firewall)**: Validates intents, enforces behavioral circuit breakers, and manages the session lifecycle.
+3.  **Vision MCP (Observation)**: Dedicated observer that connects to the Data Plane (Port 22001) for real-time visual and hardware monitoring.
+4.  **Blender Add-on (The Kernel)**: A background server inside Blender that queues commands and executes them on the main thread via `bpy.app.timers`.
 
 ---
 
 ## 🛡️ Governance & Safety (The Iron Box)
 
-The bridge implements a multi-layered security model to ensure the AI remains a productive partner rather than a system threat.
-
 ### 1. Hardware-Level DoS Protection
-*   **Polygon Bomb Railings**: Mechanical caps on subdivision levels (max 3), array counts (max 50), and particle emitters.
-*   **Light Energy Guard**: Hard cap on light intensity (10k) to prevent GPU driver timeouts (TDR).
-*   **VRAM Protection**: Enforced limits on texture baking resolutions (max 2048px).
+*   **Resource Sentinel**: Real-time monitoring of RAM and CPU. Automatically blocks heavy operations if resources are critical.
+*   **VRAM Guard**: Prevents VRAM overflow by capping resolutions and blocking large data transfers.
 
-### 2. Epistemic Governance (Anti-Hallucination)
-*   **Truth Reconciliation**: Tools like `reconcile_state` allow the agent to verify multiple assumptions about the scene in a single round-trip.
-*   **Stale Session Detector**: Detecting Blender restarts via unique `SESSION_ID` headers, instantly invalidating the agent's internal world-model to prevent "ghost planning."
-*   **Fact Assertions**: Requiring the agent to declare ground-truth invariants before high-impact operations.
+### 2. Activity Gating (Flow Protection)
+*   **Polite Execution**: The Kernel detects active user interaction (e.g., sculpting strokes, painting). Mutations are held in the airlock until the user releases the mouse, ensuring zero "brush-yanking" interruptions.
+*   **Mode Rubber-Banding**: After a mutation, the Kernel attempts to restore the user's original mode (Sculpt/Edit/Paint) automatically if mesh integrity is preserved.
 
 ### 3. Execution Safety
-*   **Split Architecture**: No `bpy` calls from the background thread. All commands are marshaled to the main loop, ensuring thread safety and preventing segmentation faults.
-*   **Context Overrides**: Every command automatically generates a 3D Viewport context, allowing UI-dependent operators to run reliably from a background process.
-*   **Implicit Transactions**: Every mutation is wrapped in a named Blender Undo step (e.g., *"VibeBridge: Setup Shaders"*).
+*   **Transaction Management**: Support for `begin_transaction` and `rollback_transaction`. Complex production steps are atomic.
+*   **Headless Support**: Full compatibility with `--background` mode. Viewport-dependent logic is gracefully bypassed in CI/CD environments.
 
 ---
 
@@ -78,15 +76,15 @@ The bridge implements a multi-layered security model to ensure the AI remains a 
 
 The bridge provides the agent with "eyes" and "hands" optimized for technical artistry:
 
+*   **Unity Pipeline**: One-click Humanoid rig validation, mesh decimation, and viseme generation.
 *   **Geometry Kernel**: Deep inspection of N-Gons, non-manifold edges, and vertex stats.
 *   **Technical Art**: Automated creation of Shader Graphs and Geometry Node trees.
 *   **Simulation Power**: One-click setup for Rigid Body, Cloth, and Collision physics.
-*   **Cinematography**: Strategic intents for Three-Point Lighting and Camera orchestration.
-*   **Collaborative Design**: 3D Annotations for the AI to "mark up" the scene for human review.
 
 ---
 
 ## 📝 Key Principles (The AI Safety Manual)
+*   **Fail Securely**: If an operation fails, consult `logs/vibe_audit.jsonl` immediately using `get_blender_errors()`.
 *   **Read-Before-Write**: Always `Inspect → Validate → Mutate → Verify`.
 *   **Idempotence**: Every operation must be safe to repeat.
 *   **Zero Trust**: No direct `bpy` imports, no `exec()`, and no external network traffic.

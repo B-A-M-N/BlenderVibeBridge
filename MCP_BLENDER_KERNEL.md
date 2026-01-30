@@ -10,12 +10,14 @@
 
 ### 🔒 Execution Safety
 *   **Atomic Operation Wrapper**: `begin_transaction()` -> `try` -> `commit` / `rollback`. (**ACTIVE**)
-*   **Context Guard**: Snapshots and strict-restores Active Object, Selection, and Mode. (**ACTIVE**)
-*   **Operation Sandboxing**: Run destructive ops on `object.copy()` first. If successful, swap data. If fail, discard.
+*   **Context Guard**: Snapshots and strict-restores Active Object, Selection, and Mode. Includes **Mode Rubber-Banding** to restore Sculpt/Edit state safely. (**ACTIVE**)
+*   **Activity Gating**: Detects active user interaction (strokes). Mutations are held until the user releases the mouse. (**ACTIVE**)
+*   **Operation Sandboxing**: Run destructive ops on `object.copy()` first. If successful, swap data. If fail, discard. (**ACTIVE**)
 
 ### 🛑 Corruption Defense
 *   **NaN / Infinity Watchdog**: Scans Transforms, Bones, and Shape Keys for mathematical voids (`inf`/`nan`). (**ACTIVE**)
-*   **Dependency Graph Hard Refresh**: Forces a full depsgraph rebuild to clear ghost state.
+*   **Heartbeat & Progress API**: Real-time telemetry export of AI operation status and completion percentage. (**ACTIVE**)
+*   **Dependency Graph Hard Refresh**: Forces a full depsgraph rebuild to clear ghost state. (**ACTIVE**)
 
 ### 🧹 State Hygiene
 *   **Orphaned Datablock Purge**: Deterministically deletes unused meshes/materials.
@@ -87,15 +89,15 @@
 | **NaN / Infinity Poisoning** | **NaN Watchdog** | ✅ ACTIVE |
 | **Export-Time Betrayal** | **Export Contract Enforcer** | ✅ ACTIVE |
 | **Material Mismatch** | **Janitor (Material Reset)** | ✅ ACTIVE |
-| **Viewport Crashes** | **Emergency Downgrade (Planned)** | 🚧 PHASE 4 |
-| **Orphaned Datablocks** | **Orphan Purge (Planned)** | 🚧 PHASE 4 |
-| **Shape Key Fragility** | **Integrity Checker (Planned)** | 🚧 PHASE 4 |
-| **Bone Drift** | **Armature Audit (Planned)** | 🚧 PHASE 4 |
+| **Viewport Crashes** | **Emergency Downgrade** | ✅ ACTIVE |
+| **Orphaned Datablocks** | **Orphan Purge** | ✅ ACTIVE |
+| **Shape Key Fragility** | **Integrity Checker** | ✅ ACTIVE |
+| **Bone Drift** | **Armature Audit** | ✅ ACTIVE |
 
 ---
 
 ## 🚀 Implementation Priority
 
-1.  **Operation Sandboxing** (Stop partial failures).
-2.  **Orphan Purge** (Stop bloat).
-3.  **Armature Audit** (Stop rig rot).
+1.  **Operation Sandboxing** (✅ COMPLETED).
+2.  **Orphan Purge** (✅ COMPLETED).
+3.  **Armature Audit** (✅ COMPLETED).

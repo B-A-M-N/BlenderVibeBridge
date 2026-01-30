@@ -44,11 +44,11 @@ This document defines the non-negotiable structural constraints for AI-generated
 *   **Main Thread Dispatch**: All `bpy` API calls must be executed on the main thread via `bpy.app.timers`. NEVER call `bpy` from the HTTP thread.
 
 ## 10. Mandatory Transactions
-*   **Implicit Wrapping**: Complex mutations should be grouped.
-*   **Exception Handling**: On any server-side exception, log the error and attempt to leave the state clean.
+*   **Implicit Wrapping**: Complex mutations should be grouped using `begin_transaction` and `commit_transaction`.
+*   **Exception Handling**: On any server-side exception, log the error, consult the audit log, and attempt to leave the state clean via `rollback_transaction`.
 
 ## 11. Identity Stability
-*   **References**: `bpy.types.Object` references in Python can become invalid if the object is deleted or the file is reloaded. Use names or persistent pointers if available/safe.
+*   **References**: `bpy.types.Object` references in Python can become invalid if the object is deleted or the file is reloaded. Use names or persistent pointers if available/safe. Use `audit_identity` to verify state.
 
 ## 12. No Blender Tricks (Persistence Ban)
 *   **No Handlers**: Registration of `bpy.app.handlers` (e.g., `load_post`, `save_pre`, `frame_change_post`) is STRICTLY FORBIDDEN.
@@ -57,11 +57,29 @@ This document defines the non-negotiable structural constraints for AI-generated
 ## 13. Idempotence & Read-Before-Write
 *   **Atomic Idempotence**: All mutation tools MUST be idempotent. Repeating a request should have no side effects beyond the first successful application.
 *   **RBW Loop**: Every mutation must follow the sequence: `Inspect (Tool)` -> `Validate (Logic)` -> `Mutate (Tool)` -> `Verify (Tool)`.
+*   **Mandatory Reconciliation**: Before any complex multi-step mutation (e.g., character rigging, scene lighting setup), the AI MUST call `reconcile_state` to sync its internal world-model with the bridge.
 
 ## 14. Asset Integrity & Scanning
 *   **Mandatory Scan**: All external assets (`.blend`, `.fbx`, `.obj`, `.glb`, etc.) MUST be scanned via `scan_external_asset` before any import or link operation.
 *   **No Auto-Run**: The bridge MUST NOT enable Blender's "Auto-run Python Scripts" preference.
 *   **Script Block**: Any asset found containing embedded Python `import` or `exec` signatures must be rejected.
+
+## 15. Tool Selection Priority (The Hierarchy)
+*   **Level 1: High-Level MCP Tools**: Always prefer `transform_object`, `manage_modifier`, `setup_lighting`, etc. over raw script execution.
+*   **Level 2: Atomic Sandbox**: If no high-level tool exists, use `sandbox_modify_object` to test changes on a clone before applying.
+*   **Level 3: Low-Level Scripting**: `exec_script` is a last resort and REQUIRES a specific, detailed explanation of why high-level tools were insufficient.
+
+## 16. Failure Recovery & Hardware Sentinel
+*   **Consult Logs First**: If an operation fails (`status: ERROR` or `BLOCKED`), the AI MUST call `get_blender_errors()` and inspect `logs/vibe_audit.jsonl` BEFORE asking the user or retrying.
+*   **Hardware Awareness**: Respect `ResourceMonitor` blocks. If blocked by `RAM CRITICAL` or `VRAM LOW`, the AI must wait, suggest purging orphans (`purge_orphans`), or downscaling resolutions before proceeding.
+*   **Transaction Rollback**: If a transaction fails, `rollback_transaction` MUST be called to restore the last known good state.
+
+## 17. Heartbeat & Progress Monitoring
+*   **Heavy Ops**: For long-running operations (Baking, IO, Physics), the AI MUST periodically call `check_heartbeat()` to track the `progress` field.
+*   **Activity Gating**: If a command response is delayed, the AI MUST assume the user is performing a manual stroke and wait patiently rather than spamming retries.
+
+## 18. Headless CI/CD Support
+*   **Background Detection**: When `get_scene_telemetry()` shows no active windows, the AI MUST avoid viewport-specific commands (e.g., `set_viewport_shading`) and focus on data-only mutations.
 
 ## The Meta-Rule
 If a proposed solution is unusually short, clever, or bypasses a limitation, assume it is wrong. Prioritize safety and explicit verification over brevity.

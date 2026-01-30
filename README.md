@@ -191,6 +191,14 @@ For entities generating revenue, commercial studios, or those who wish to keep t
 
 
 
+#### 3. CONTRIBUTIONS & GRANT OF RIGHTS
+
+By submitting a contribution (pull request, code snippet, bug fix, or documentation) to this project, you grant the Author (B-A-M-N) a non-exclusive, irrevocable, worldwide, royalty-free license to use, reproduce, modify, and distribute your contribution under any license model the Author chooses (including the Open-Source and Commercial paths defined above). 
+
+The Author reserves the right to incorporate and use all contributions without the obligation to track down, notify, or seek further approval from the original contributor for future licensing changes or commercial applications. Submission of a contribution constitutes acceptance of these terms.
+
+
+
 ---
 
 

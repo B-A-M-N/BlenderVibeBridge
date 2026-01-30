@@ -85,6 +85,9 @@ OUTBOX_PATH = "/home/bamn/BlenderVibeBridge/vibe_queue/outbox"
 def blender_request(method, path, data=None, is_mutation=False):
     global SESSION_ID
     
+    if not limiter.check():
+        return {"error": "Rate limit exceeded. Max 5 req/s."}
+
     # Log the intent
     if is_mutation:
         logger.info(f"MUTATION_REQUEST: {method} {path} | Data: {json.dumps(data)}")
@@ -96,21 +99,6 @@ def blender_request(method, path, data=None, is_mutation=False):
         logger.warning(f"BLOCKED: {reason}")
         return {"error": reason}
 
-    # Semantic Enforcement
-    if is_mutation and data:
-        target_name = data.get("name") or data.get("obj_name")
-        if target_name:
-            reg_path = "metadata/vibe_registry.json"
-            if os.path.exists(reg_path):
-                try:
-                    with open(reg_path, "r") as f:
-                        registry = json.load(f)
-                        role = registry.get(target_name, {}).get("role", "").upper()
-                        if role in ["PRIMARY_LIGHT", "MAIN_CAMERA"] and data.get("type") in ["run_op", "mesh_op"]:
-                            monitor.report_violation(f"Attempt to delete locked object: {target_name}")
-                            return {"error": f"Role Locked: {target_name}"}
-                except: pass
-
     # Security Audit for Scripts
     if data and data.get("type") == "exec_script":
         script = data.get("script")
@@ -118,6 +106,7 @@ def blender_request(method, path, data=None, is_mutation=False):
             violations = SecurityGate.check_python(script)
             if violations:
                 logger.warning(f"SECURITY_VIOLATION blocked script: {violations}")
+                monitor.report_violation(f"Script Violation: {violations[0]}")
                 return {"error": f"Security Violation: {violations[0]}"}
 
     # --- HYBRID DISPATCH ---
@@ -126,6 +115,7 @@ def blender_request(method, path, data=None, is_mutation=False):
         cmd_id = str(uuid.uuid4())
         payload = data or {}
         payload["id"] = cmd_id
+        if SESSION_ID: payload["vibe_session_id"] = SESSION_ID
         
         # 1. Write to Inbox
         os.makedirs(INBOX_PATH, exist_ok=True)
@@ -138,18 +128,22 @@ def blender_request(method, path, data=None, is_mutation=False):
         outbox_file = os.path.join(OUTBOX_PATH, f"res_{cmd_id}.json")
         timeout = 15
         start_time = time.time()
+        retries = 0
         
         while time.time() - start_time < timeout:
             if os.path.exists(outbox_file):
                 try:
                     with open(outbox_file, "r") as f:
-                        response_content = f.read()
+                        resp_json = json.load(f)
                     os.remove(outbox_file)
-                    resp_json = json.loads(response_content)
                     AuditLogger.log_mutation(method, path, data, resp_json)
                     return resp_json
                 except Exception as e:
-                    return {"error": f"Airlock Read Error: {str(e)}"}
+                    retries += 1
+                    if retries > 5:
+                        return {"error": f"Airlock Corruption: {str(e)}"}
+                    time.sleep(0.2)
+                    continue
             time.sleep(0.1)
             
         return {"error": f"Airlock Timeout: Blender did not process mutation {cmd_id} within {timeout}s"}
@@ -159,7 +153,13 @@ def blender_request(method, path, data=None, is_mutation=False):
     try:
         resp = requests.request(method, f"{BLENDER_API_URL}{path}", json=data, headers=headers, timeout=10)
         
+        # Session tracking
         new_sid = resp.headers.get("X-Vibe-Session")
+        try:
+            body = resp.json()
+            if "session" in body: new_sid = body["session"]
+        except: pass
+
         if new_sid and SESSION_ID and new_sid != SESSION_ID:
             SESSION_ID = new_sid
             return {"error": "STALE_STATE_DETECTED: Refresh belief map."}
@@ -173,6 +173,40 @@ def blender_request(method, path, data=None, is_mutation=False):
     except Exception as e: return {"error": f"Failed: {str(e)}"}
 
 # --- TOOL GROUPS ---
+
+@mcp.tool()
+def validate_humanoid_rig(armature_name: str) -> str:
+    """THE DOCTOR: Validates if a rig follows the standard Unity Humanoid bone structure.
+    Essential for ensuring animations work correctly in VRChat."""
+    return str(blender_request("POST", "/command", data={"type": "unity_op", "action": "validate_humanoid", "target": armature_name}, is_mutation=True))
+
+@mcp.tool()
+def optimize_avatar_mesh(obj_name: str, ratio: float = 0.5) -> str:
+    """THE POLISHER: Reduces the polycount of a mesh by a specific ratio (0.0 to 1.0).
+    Use this to create 'Quest-Ready' versions of high-poly avatars."""
+    return str(blender_request("POST", "/command", data={"type": "unity_op", "action": "optimize_avatar", "target": obj_name, "ratio": ratio}, is_mutation=True))
+
+@mcp.tool()
+def generate_viseme_key(mesh_name: str, viseme: str) -> str:
+    """THE VOX: Creates a viseme shape key slot (e.g., 'vrc.v_aa', 'vrc.v_ih') for lip-sync.
+    Use this when preparing character meshes for VRChat."""
+    return str(blender_request("POST", "/command", data={"type": "viseme_op", "name": mesh_name, "viseme": viseme}, is_mutation=True))
+
+@mcp.tool()
+def begin_transaction() -> str:
+    """THE ARCHIVIST: Starts a multi-command transaction. 
+    All subsequent mutations will be grouped into a single Undo step."""
+    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "begin_transaction"}, is_mutation=True))
+
+@mcp.tool()
+def commit_transaction() -> str:
+    """THE ARCHIVIST: Finalizes and saves the current multi-command transaction."""
+    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "commit_transaction"}, is_mutation=True))
+
+@mcp.tool()
+def rollback_transaction() -> str:
+    """THE ARCHIVIST: Aborts the current transaction and reverts all changes since 'begin_transaction'."""
+    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "rollback_transaction"}, is_mutation=True))
 
 @mcp.tool()
 def hot_reload_blender_bridge() -> str:
@@ -202,7 +236,7 @@ def inspect_object_forensics(name: str) -> str:
 
 @mcp.tool()
 def execute_strategic_intent(intent: str) -> str:
-    """Runs atomic artistic recipes like 'RESTORE_AVATAR_COLORS_RED'."""
+    """THE DIRECTOR: Runs high-level atomic artistic recipes like 'RESTORE_AVATAR_COLORS_RED'."""
     return str(blender_request("POST", "/command", data={"type": "macro_op", "intent": intent.upper()}, is_mutation=True))
 
 @mcp.tool()
@@ -212,10 +246,8 @@ def manage_modifier(name: str, action: str, modifier_name: str, modifier_type: s
     if properties:
         try:
             props = json.loads(properties)
-            for k, v in props.items():
-                payload.update({"prop": k, "value": str(v)})
-                blender_request("POST", "/command", data=payload, is_mutation=True)
-            return f"✅ {modifier_name} updated."
+            payload.update({"action": "set", "props": props})
+            return str(blender_request("POST", "/command", data=payload, is_mutation=True))
         except: return "Error: Invalid JSON."
     return str(blender_request("POST", "/command", data=payload, is_mutation=True))
 
@@ -242,8 +274,15 @@ def manage_nodes(name: str, action: str, node_type: str = None, target_type: str
 
 @mcp.tool()
 def apply_physics(name: str, type: str) -> str:
-    """Applies RIGID_BODY or CLOTH physics."""
+    """THE SIMULATOR: Applies RIGID_BODY or CLOTH physics to an object.
+    Use this to instantly make an object respond to gravity or behave like fabric."""
     return str(blender_request("POST", "/command", data={"type": "physics_op", "name": name, "phys_type": type.upper()}, is_mutation=True))
+
+@mcp.tool()
+def material_preview_sandbox() -> str:
+    """THE SHOWROOM: Spawns a temporary preview sphere to test material changes safely.
+    Use this to see how a material looks without modifying your main meshes."""
+    return str(blender_request("POST", "/command", data={"type": "cleanup_op", "action": "material_preview_sandbox"}, is_mutation=True))
 
 @mcp.tool()
 def setup_lighting(name: str, type: str = "POINT", energy: float = 10.0, color: str = "(1, 1, 1)") -> str:
@@ -251,9 +290,13 @@ def setup_lighting(name: str, type: str = "POINT", energy: float = 10.0, color: 
     return str(blender_request("POST", "/command", data={"type": "lighting_op", "name": name, "type_light": type.upper(), "energy": energy, "color": color}, is_mutation=True))
 
 @mcp.tool()
-def manage_constraints(owner_name: str, action: str, type: str, target_name: str = None) -> str:
-    """Rigging tools: TRACK_TO, FOLLOW_PATH, COPY_LOCATION."""
-    return str(blender_request("POST", "/command", data={"type": "constraint_op", "action": action, "name": owner_name, "target": target_name, "c_type": type.upper()}, is_mutation=True))
+def manage_constraints(owner_name: str, action: str, type: str, target_name: str = None, constraint_name: str = None, properties: str = None) -> str:
+    """Rigging tools: TRACK_TO, FOLLOW_PATH, COPY_LOCATION. properties: JSON string."""
+    payload = {"type": "constraint_op", "action": action, "name": owner_name, "target": target_name, "c_type": type.upper(), "c_name": constraint_name}
+    if properties:
+        try: payload["props"] = json.loads(properties)
+        except: return "Error: Invalid JSON."
+    return str(blender_request("POST", "/command", data=payload, is_mutation=True))
 
 @mcp.tool()
 def set_viewport_shading(mode: str = "SOLID") -> str:
@@ -285,7 +328,7 @@ def link_external_library(filepath: str, name: str, directory: str = "Object") -
 def secure_write_file(path: str, content: str) -> str:
     """Writes a file ONLY after passing an AST Security Audit. Enforces workspace hygiene."""
     if ".." in path or path.startswith("/"): return "Path traversal blocked."
-    if any(fp in path for fp in ["security_gate.py", "server.py", "bridge_logic.py"]): return "Infrastructure protection."
+    if any(fp in path for fp in ["security_gate.py", "server.py", "bridge_logic.py", "__init__.py"]): return "Infrastructure protection."
     if SecurityGate.check_python(content): return "Security Violation."
     
     # --- WORKSPACE HYGIENE ENFORCEMENT ---
@@ -310,6 +353,14 @@ def secure_write_file(path: str, content: str) -> str:
     except Exception as e: return f"Failed: {str(e)}"
 
 @mcp.tool()
+def protect_object(name: str, protected: bool = True) -> str:
+    """THE GUARDIAN: Locks or unlocks an object from deletion.
+    locked objects cannot be deleted by the AI until unprotected.
+    Set protected=False to unlock."""
+    script = f"bpy.data.objects['{name}']['vibe_protected'] = {1 if protected else 0}"
+    return str(blender_request("POST", "/command", data={"type": "exec_script", "script": script, "description": f"PROTECT:{name}"}, is_mutation=True))
+
+@mcp.tool()
 def undo_last_operation() -> str:
     """Performs a global Blender Undo (Ctrl+Z equivalent). Use this to revert a mistake."""
     return str(blender_request("POST", "/command", data={"type": "system_op", "action": "undo"}, is_mutation=True))
@@ -319,6 +370,75 @@ def create_safety_checkpoint(name: str) -> str:
     """Saves a timestamped copy of the current .blend file to the 'checkpoints/' folder.
     Use BEFORE performing risky structural changes."""
     return str(blender_request("POST", "/command", data={"type": "system_op", "action": "checkpoint", "name": name}, is_mutation=True))
+
+@mcp.tool()
+def manage_collection(name: str, action: str = "add", obj_name: str = None) -> str:
+    """THE ORGANIZER: Creates collections or links objects to them. action: 'add' or 'link'."""
+    return str(blender_request("POST", "/command", data={"type": "collection_op", "name": name, "action": action, "obj_name": obj_name}, is_mutation=True))
+
+@mcp.tool()
+def manage_material(name: str, obj_name: str = None) -> str:
+    """THE SURFACER: Creates a new material and optionally assigns it to an object."""
+    return str(blender_request("POST", "/command", data={"type": "material_op", "name": name, "obj_name": obj_name}, is_mutation=True))
+
+@mcp.tool()
+def trigger_bake(resolution: int = 1024) -> str:
+    """THE OVEN: Triggers a texture bake with a 2048px hardware safety cap."""
+    return str(blender_request("POST", "/command", data={"type": "bake_op", "resolution": resolution}, is_mutation=True))
+
+@mcp.tool()
+def set_animation_keyframe(name: str, prop: str = "location", frame: int = 1) -> str:
+    """THE ANIMATOR: Inserts a keyframe for a property at a specific frame."""
+    return str(blender_request("POST", "/command", data={"type": "animation_op", "name": name, "prop": prop, "frame": frame}, is_mutation=True))
+
+@mcp.tool()
+def manage_camera(name: str, active: bool = True) -> str:
+    """THE CINEMATOGRAPHER: Spawns a camera and optionally makes it the active view."""
+    return str(blender_request("POST", "/command", data={"type": "camera_op", "name": name, "active": active}, is_mutation=True))
+
+@mcp.tool()
+def set_world_background(color: str = "(0.05, 0.05, 0.05, 1)") -> str:
+    """THE STAGEHAND: Sets the global environment background color."""
+    return str(blender_request("POST", "/command", data={"type": "world_op", "color": color}, is_mutation=True))
+
+@mcp.tool()
+def create_procedural_curve(name: str, coords: str = "[(0,0,0), (1,1,1)]") -> str:
+    """THE PATHFINDER: Creates a 3D Poly Curve from a list of (x,y,z) coordinate tuples."""
+    return str(blender_request("POST", "/command", data={"type": "curve_op", "name": name, "coords": coords}, is_mutation=True))
+
+@mcp.tool()
+def manage_object_locks(name: str, lock: bool = True) -> str:
+    """THE JAILER: Locks or unlocks all transform axes (Loc/Rot/Scale) for an object."""
+    return str(blender_request("POST", "/command", data={"type": "lock_op", "name": name, "lock": lock}, is_mutation=True))
+
+@mcp.tool()
+def process_mesh(action: str) -> str:
+    """THE BLACKSMITH: shade_smooth, shade_flat, or join selected objects."""
+    return str(blender_request("POST", "/command", data={"type": "mesh_op", "action": action}, is_mutation=True))
+
+@mcp.tool()
+def manage_vertex_groups(name: str, vg_name: str) -> str:
+    """THE WEIGHTER: Creates a new vertex group on a mesh object."""
+    return str(blender_request("POST", "/command", data={"type": "vg_op", "name": name, "vg_name": vg_name}, is_mutation=True))
+
+@mcp.tool()
+def setup_spatial_audio(name: str) -> str:
+    """THE COMPOSER: Spawns a 3D Speaker object for spatialized sound."""
+    return str(blender_request("POST", "/command", data={"type": "audio_op", "name": name}, is_mutation=True))
+
+@mcp.tool()
+def import_export_asset(action: str, filepath: str) -> str:
+    """THE GATEKEEPER: action: 'import_fbx' or 'export_fbx'."""
+    if action == "import_fbx":
+        violations = SecurityGate.check_asset(filepath)
+        if violations:
+            return f"❌ IMPORT BLOCKED: {violations[0]}"
+    return str(blender_request("POST", "/command", data={"type": "io_op", "action": action, "filepath": filepath}, is_mutation=True))
+
+@mcp.tool()
+def create_3d_annotation(text: str) -> str:
+    """THE SCRIBBLE: Creates a Grease Pencil object for 3D notes and markup."""
+    return str(blender_request("POST", "/command", data={"type": "annotation_op", "text": text}, is_mutation=True))
 
 @mcp.tool()
 def save_as_new_copy(filename: str) -> str:
@@ -336,56 +456,51 @@ def reset_material_standard(material_name: str) -> str:
 def scan_for_nan_inf() -> str:
     """THE WATCHDOG: Scans all objects for NaN (Not a Number) or Infinite values in transforms and geometry.
     Run this if the physics explode or the viewport glitches."""
-    return str(blender_request("POST", "/command", data={"type": "cleanup_op", "action": "scan_nan"}, is_mutation=False))
+    return str(blender_request("POST", "/query", data={"type": "cleanup_op", "action": "scan_nan"}, is_mutation=False))
 
 @mcp.tool()
 def audit_external_dependencies() -> str:
     """THE AUDITOR: Checks all external file references (Images, Libraries) to ensure they exist on disk.
     Prevents missing textures and pink materials."""
-    return str(blender_request("POST", "/command", data={"type": "audit_op", "action": "check_deps"}, is_mutation=False))
+    return str(blender_request("POST", "/query", data={"type": "audit_op", "action": "check_deps"}, is_mutation=False))
 
 @mcp.tool()
 def validate_export_contract() -> str:
     """THE GATEKEEPER: Checks scene validity before Export.
     Flags: Unapplied Scale, Non-Zero Rotation, N-Gons, Loose Geometry.
     Use this BEFORE exporting to Unity/Unreal."""
-    return str(blender_request("POST", "/command", data={"type": "audit_op", "action": "validate_export"}, is_mutation=False))
+    return str(blender_request("POST", "/query", data={"type": "audit_op", "action": "validate_export"}, is_mutation=False))
 
 @mcp.tool()
 def audit_rig_integrity() -> str:
     """THE CHIROPRACTOR: Scans all bones and constraints for NaN values, roll corruption, or broken hierarchies.
     Essential for ensuring animations play correctly in Unity."""
-    return str(blender_request("POST", "/command", data={"type": "audit_op", "action": "audit_rig"}, is_mutation=False))
+    return str(blender_request("POST", "/query", data={"type": "audit_op", "action": "audit_rig"}, is_mutation=False))
 
 @mcp.tool()
 def audit_shape_key_integrity() -> str:
     """THE VISEME GUARD: Scans all meshes for broken or basis-mismatched shape keys.
     Prevents facial expressions from vanishing during Unity import."""
-    return str(blender_request("POST", "/command", data={"type": "audit_op", "action": "audit_shape_keys"}, is_mutation=False))
+    return str(blender_request("POST", "/query", data={"type": "audit_op", "action": "audit_shape_keys"}, is_mutation=False))
 
 @mcp.tool()
 def audit_vertex_groups() -> str:
     """THE WEIGHTING GUARD: Scans for vertices that have NO weight assignments on rigged meshes.
     Prevents the 'Spiking Mesh' bug in Unity."""
-    return str(blender_request("POST", "/command", data={"type": "audit_op", "action": "audit_weights"}, is_mutation=False))
+    return str(blender_request("POST", "/query", data={"type": "audit_op", "action": "audit_weights"}, is_mutation=False))
 
 @mcp.tool()
-def get_trait_fingerprint(object_name: str) -> str:
-    """THE IDENTITY LOCK: Generates a unique fingerprint based on mesh traits (verts, mats, bounds).
-    Use this to verify you are still editing the same object after a rename or reload."""
-    return str(blender_request("POST", "/command", data={"type": "audit_op", "action": "fingerprint", "target": object_name}, is_mutation=False))
+def audit_identity(target_name: str = None, depth: str = "SHALLOW") -> str:
+    """THE ARCHITECT'S SEAL: Generates a unique signature for an object or the whole scene.
+    depth: 'SHALLOW' (fast), 'DEEP' (vertex-level), 'SCENE' (full scene layout).
+    Use this to verify if things have moved or changed unexpectedly."""
+    return str(blender_request("POST", "/query", data={"type": "audit_op", "action": "identity", "target": target_name, "depth": depth.upper()}, is_mutation=False))
 
 @mcp.tool()
 def emergency_viewport_downgrade() -> str:
     """THE PANIC BUTTON: Instantly saves a GPU/UI freeze by switching to Solid Mode and disabling all modifiers.
     Use this if Blender becomes unresponsive or laggy."""
     return str(blender_request("POST", "/command", data={"type": "system_op", "action": "panic_downgrade"}, is_mutation=True))
-
-@mcp.tool()
-def get_scene_hash() -> str:
-    """THE REALITY ANCHOR: Generates a hash of all object transforms and vertex counts.
-    Use this to detect if the user (or another addon) has moved things while the AI was processing."""
-    return str(blender_request("POST", "/command", data={"type": "audit_op", "action": "scene_hash"}, is_mutation=False))
 
 @mcp.tool()
 def generate_forensic_dump() -> str:
@@ -397,19 +512,13 @@ def generate_forensic_dump() -> str:
 def find_object_by_traits(vertex_count: int = None, material_name: str = None) -> str:
     """THE TRACKER: Finds objects based on physical traits rather than names.
     Use this if you think an object was renamed or to verify identity."""
-    return str(blender_request("POST", "/command", data={"type": "audit_op", "action": "find_by_traits", "v_count": vertex_count, "mat_name": material_name}, is_mutation=False))
+    return str(blender_request("POST", "/query", data={"type": "audit_op", "action": "find_by_traits", "v_count": vertex_count, "mat_name": material_name}, is_mutation=False))
 
 @mcp.tool()
 def sandbox_modify_object(object_name: str, script: str) -> str:
     """THE SURGEON'S TABLE: Clones an object, runs a script on the clone, validates integrity, 
     and only swaps the data back if it passes. Use for risky mesh/rig edits."""
     return str(blender_request("POST", "/command", data={"type": "exec_script", "description": f"SANDBOX:{object_name}", "script": script, "sandbox_target": object_name}, is_mutation=True))
-
-@mcp.tool()
-def get_vertex_order_hash(object_name: str) -> str:
-    """THE BASIS SHIELD: Generates a unique hash of the vertex index mapping.
-    Use this BEFORE and AFTER an operation to ensure Shape Keys/Blendshapes won't break in Unity."""
-    return str(blender_request("POST", "/command", data={"type": "audit_op", "action": "vertex_hash", "target": object_name}, is_mutation=False))
 
 @mcp.tool()
 def purge_orphans() -> str:
@@ -439,8 +548,22 @@ def check_heartbeat() -> str:
     return "Heartbeat file missing. Blender may be hung or bridge not started."
 
 @mcp.tool()
+def get_vibe_audit_log(lines: int = 20) -> str:
+    """Retrieves the last N entries from the JSONL audit log.
+    Essential for verifying why an operation was BLOCKED or failed."""
+    path = "/home/bamn/BlenderVibeBridge/logs/vibe_audit.jsonl"
+    if os.path.exists(path):
+        try:
+            with open(path, "r") as f:
+                all_lines = f.readlines()
+                return "".join(all_lines[-lines:])
+        except Exception as e:
+            return f"Error reading audit log: {str(e)}"
+    return "Audit log missing."
+
+@mcp.tool()
 def get_blender_errors() -> str:
-    """Retrieves the last 20 lines from the bridge log to debug script failures."""
+    """Retrieves the last 20 lines from the bridge.log file for low-level debugging."""
     path = "/home/bamn/BlenderVibeBridge/bridge.log"
     if os.path.exists(path):
         try:

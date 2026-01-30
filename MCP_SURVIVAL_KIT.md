@@ -22,10 +22,10 @@
 *   **Function:** Scans transforms, bone rolls, and shape keys for `NaN` or `inf` values.
 *   **Defense:** Prevents "exploding rig" syndrome where corrupt math propagates silently.
 
-### 🚧 Mode Transition Airlock
-*   **Mechanism:** Explicit Mode Gates.
-*   **Function:** Never assume mode. Force `bpy.ops.object.mode_set(mode='OBJECT')` before any topology change.
-*   **Defense:** Prevents crashes caused by editing mesh data while stuck in Pose Mode.
+### ✅ Mode Transition Airlock
+*   **Mechanism:** Explicit Mode Gates + Rubber-Banding.
+*   **Function:** Never assume mode. Force `bpy.ops.object.mode_set(mode='OBJECT')` before mutation, then restore the original Sculpt/Edit mode if mesh integrity is preserved.
+*   **Defense:** Prevents crashes and flow interruptions.
 
 ---
 

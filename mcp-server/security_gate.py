@@ -241,6 +241,7 @@ class SecurityGate:
 
     @staticmethod
     def _is_path_safe(path):
+        """Prevents path traversal and access to bridge infrastructure files."""
         forbidden = ("security_gate.py", "trusted_signatures.json", "metadata/", ".gemini_security/")
         if any(f in path for f in forbidden): return False
         if ".." in path: return False
@@ -263,17 +264,6 @@ class SecurityGate:
                         if isinstance(k, ast.Constant) and k.value == "X-Vibe-Token":
                             return True
         return False
-
-    # --- Shell Security (Whitelist Based) ---
-    SHELL_WHITELIST = {
-        'git', 'python', 'python3', 'ls', 'cat', 'mkdir', 'rm', 'cp', 'mv', 
-        'grep', 'find', 'pip', 'pip3', 'cargo', 'rustc', 'docker'
-    }
-    FORBIDDEN_SHELL_PATTERNS = {
-        'curl', 'wget', 'ssh', 'nc', 'bash -i', 'sh -i', '>', '>>', '|', '&&', ';', '`', '$(',
-        'API_KEY', 'TOKEN', 'gcloud', 'env', 'printenv', '.config',
-        'LD_', 'PYTHONPATH', 'PERL5LIB', 'RUBYLIB', '*', '?', '[', ']', '{', '}'
-    }
 
     # --- Asset Security (Greedy Binary Scan) ---
     DANGEROUS_ASSET_PATTERNS = [
