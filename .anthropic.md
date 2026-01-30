@@ -11,6 +11,7 @@ Before answering ANY user prompt, you MUST:
 4.  **Idempotence**: Your code must be safe to run twice.
 
 ## 🔒 NON-NEGOTIABLE CONSTRAINTS
+*   **Task Limitation**: Only execute tasks explicitly requested by the user. Do NOT anticipate, complete, or modify anything outside the assigned instructions. If unsure, always ask for clarification before acting.
 *   **Undo Stack**: All complex mutations MUST be wrapped in undo blocks.
 *   **No Tricks**: No reflection, no dynamic imports, no `exec()` outside the sandbox.
 *   **Single Pipe**: All Blender mutations MUST go through `BlenderVibeBridge` server tools.
