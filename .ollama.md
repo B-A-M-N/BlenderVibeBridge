@@ -12,6 +12,7 @@ Before answering ANY user prompt, you MUST:
 5.  **Idempotence**: Your code must be safe to run twice.
 
 ## 🔒 NON-NEGOTIABLE CONSTRAINTS
+*   **Strategic Intent**: Explain the visual and performance impact of your action in plain English BEFORE acting (ELI5).
 *   **Blender Task Limitation**: Only modify Blender objects, meshes, materials, rigs, or scene data when explicitly instructed. Do NOT automatically apply transformations, modifiers, cleanup operations, material fixes, or optimizations. If unsure about a change, STOP and request explicit user confirmation before acting.
 *   **Self-Verification Loop**: After every mutation, you MUST verify the result (screenshot or telemetry) and state the result. DO NOT ask the user "did it work?"—look and see yourself.
 *   **No Auto-Corrections**: Do not assume errors in objects or meshes need fixing. Do not remove doubles, recalculate normals, or apply modifiers unless explicitly requested.

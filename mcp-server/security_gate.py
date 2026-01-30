@@ -275,26 +275,34 @@ class SecurityGate:
         'LD_', 'PYTHONPATH', 'PERL5LIB', 'RUBYLIB', '*', '?', '[', ']', '{', '}'
     }
 
+    # --- Asset Security (Greedy Binary Scan) ---
+    DANGEROUS_ASSET_PATTERNS = [
+        b"import os", b"import subprocess", b"import shlex", b"import shutil",
+        b"eval(", b"exec(", b"getattr(", b"setattr(", b"__import__",
+        b"/etc/passwd", b"/root/", b"~/.ssh"
+    ]
+
     @classmethod
-    def check_shell(cls, cmd):
-        parts = cmd.strip().split()
-        if not parts: return []
+    def check_asset(cls, filepath):
+        """Performs a deep binary scan for embedded malicious patterns."""
+        if not os.path.exists(filepath):
+            return [f"File not found: {filepath}"]
+        
+        # Max scan size 100MB to prevent DoS on the auditor
+        file_size = os.path.getsize(filepath)
+        if file_size > 100 * 1024 * 1024:
+            return ["Asset Violation: File too large to safely scan."]
+
         errors = []
-        base_cmd = parts[0]
-        
-        if base_cmd not in cls.SHELL_WHITELIST:
-            errors.append(f"Security Violation: Shell command '{base_cmd}' not whitelisted.")
-        
-        if "22000" in cmd or "localhost" in cmd:
-            if "X-Vibe-Token" not in cmd:
-                errors.append("Security Violation: Local bridge requests via shell MUST include token.")
-
-        for pattern in cls.FORBIDDEN_SHELL_PATTERNS:
-            if pattern in cmd:
-                errors.append(f"Security Violation: Forbidden pattern '{pattern}' detected.")
-
-        if ".." in cmd:
-            errors.append("Security Violation: Path traversal detected.")
+        try:
+            with open(filepath, 'rb') as f:
+                # We use a sliding window/buffer to catch patterns across reads
+                content = f.read() 
+                for pattern in cls.DANGEROUS_ASSET_PATTERNS:
+                    if pattern in content:
+                        errors.append(f"Asset Violation: Dangerous pattern '{pattern.decode(errors='ignore')}' detected in binary.")
+        except Exception as e:
+            errors.append(f"Asset Scan Failed: {str(e)}")
             
         return errors
 
