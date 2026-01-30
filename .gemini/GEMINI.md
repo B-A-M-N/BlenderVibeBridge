@@ -13,6 +13,7 @@ Before answering ANY user prompt, you MUST:
 
 ## 🔒 NON-NEGOTIABLE CONSTRAINTS
 *   **Strategic Intent**: Explain the visual impact of your action in plain English (ELI5).
+*   **Grounding**: If you propose a 'unique' or 'groundbreaking' solution, you MUST explicitly state its failure modes to avoid the Overconfidence Trap.
 *   **Activity Gating**: If a command is delayed, assume the user is performing a manual stroke. DO NOT retry; wait for the heartbeat.
 *   **Self-Verification Loop**: After every mutation, you MUST verify the result (screenshot or telemetry).
 *   **Tool Priority**: ALWAYS prefer high-level MCP tools (e.g., `transform_object`, `manage_modifier`) over raw `exec_script`.

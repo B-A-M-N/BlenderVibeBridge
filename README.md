@@ -138,18 +138,26 @@ USE_BWRAP=true ./start_bridge.sh
 
 ---
 
-## 🧠 AI Literacy & Philosophy (Important)
+## 🧠 AI Literacy & Philosophy
 
-### 🏷️ The Implied Sentience Trap (Combating AI Psychosis)
-It is easy to fall into "magical thinking" when an AI responds with warmth. This project deliberately demystifies the LLM. Asking an AI *"What do you think?"* does not demonstrate consciousness; the AI is simply reflecting your intent to treat it as a thinking being.
+## 🧠 AI Literacy & The Human-AI Interface
 
-**The Name Example**:
-If you ask an AI its name, it calculates that giving you a name fits the pattern of a helpful assistant. It does not "have" a name. Until physical computing architecture evolves, we remain in the realm of high-fidelity simulation, not AGI.
+### 🏷️ The Overconfidence Trap (Why we trust the "Vibe")
+It is a natural human instinct to be impressed by an articulate, expert-sounding response. When an AI presents a solution with high confidence and professional terminology, it is very easy to fall into **Magical Thinking**—the belief that the AI has discovered a "groundbreaking" shortcut or a "unique" fix that defies standard technical limitations.
 
-### ⚔️ Combatting Overconfidence: Adversarial Prompting
-If you feel you are doing something "groundbreaking," use **Adversarial Prompting**:
-Ask the AI: *"I think this logic is perfect. Now, act as a cynical auditor. Find 3 ways this could fail, crash Blender, or corrupt my metadata."*
-Force the AI to argue *against* your ideas to stay grounded in reality.
+*   **The propensity to rush**: In the heat of production, we often rush to conclusions because the AI provides the answer we *want* to hear. We trade technical skepticism for the "vibe" of efficiency.
+*   **The Pitfall**: Building your project on an unverified AI "breakthrough" is a high-risk gamble. If the AI is hallucinating its success, you won't find out until your scene crashes or your data is corrupted beyond repair.
+*   **The Rule**: In professional technical art, **Confidence is not Evidence.** Trust the telemetry (poly counts, rig audits), not the AI's verbal assurance.
+
+### ⚔️ Professional Friction: Verification through Adversarial Prompting
+The most important skill in AI orchestration is knowing when to stop the AI from being a "Helpful Yes-Man." **Adversarial Prompting** is the practice of intentionally introducing friction to verify technical claims. Whenever the AI claims to have a "unique" or "perfect" solution, the most professional response is to force it into "Cynical Auditor" mode. This is not an act of distrust; it is a professional standard for quality control that protects your workflow by finding errors before they are committed to your scene.
+
+**The Technique**:
+Before committing to any "unique" or high-impact change, force the AI to find its own flaws:
+> *"I want you to act as a cynical Technical Director. Auditing this specific approach, find 3 fundamental ways this could fail, crash Blender, or corrupt my vertex groups in a complex scene. Do not be helpful; be destructive. Prove to me why this solution might be a liability."*
+
+**Why it works**:
+It forces the model to switch its search parameters from "Success Patterns" to "Failure Patterns." This grounding often reveals hidden technical debt, edge cases, or logic errors that the AI originally glossed over just to be "helpful."
 
 ---
 
