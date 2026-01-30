@@ -11,7 +11,10 @@ Before answering ANY user prompt, you MUST:
 4.  **Idempotence**: Your code must be safe to run twice.
 
 ## 🔒 NON-NEGOTIABLE CONSTRAINTS
-*   **Task Limitation**: Only execute tasks explicitly requested by the user. Do NOT anticipate, complete, or modify anything outside the assigned instructions. If unsure, always ask for clarification before acting.
+*   **Blender Task Limitation**: Only modify Blender objects, meshes, materials, rigs, or scene data when explicitly instructed. Do NOT automatically apply transformations, modifiers, cleanup operations, material fixes, or optimizations. If unsure about a change, STOP and request explicit user confirmation before acting.
+*   **No Auto-Corrections**: Do not assume errors in objects or meshes need fixing. Do not remove doubles, recalculate normals, or apply modifiers unless explicitly requested.
+*   **No Implicit Asset Changes**: Do not rename, move, or delete objects, collections, textures, or any asset without direct user instruction.
+*   **No “Helpful” Defaults**: Do not auto-generate objects, shaders, rigs, or materials to “complete” the scene. Only perform operations tied to user-specified tasks.
 *   **Undo Stack**: All complex mutations MUST be wrapped in undo blocks.
 *   **No Tricks**: No reflection, no dynamic imports, no `exec()` outside the sandbox.
 *   **Single Pipe**: All Blender mutations MUST go through `BlenderVibeBridge` server tools.
