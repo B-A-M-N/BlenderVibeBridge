@@ -1,77 +1,76 @@
-# 🛡️ MCP Blender Survival Kit: The Lifesaver Tier
+# 🛡️ MCP Blender Control Plane: Deep Safety Primitives
 
-**Core Philosophy:** Blender is a non-deterministic DCC. The MCP transforms it into a controlled, state-managed lab.
-**Goal:** Prevent silent corruption, context desync, and "looks fine until export" disasters.
-
----
-
-## 1. 🧠 State & Context Sanity (The "Hard Refresh")
-**Objective:** Fix "Nothing updates unless I restart" and ghost modifiers.
-
-### Tools
-*   `reset_blender_context()`: Force-refreshes active object, mode (Object/Edit/Pose), and triggers a viewport redraw.
-*   `hard_refresh_depsgraph()`: Toggles visibility, reassigns mesh datablocks, and forces a dependency graph rebuild to clear ghost state.
-
-## 2. 🧹 Datablock Integrity (The Garbage Collector)
-**Objective:** Stop orphaned blocks from eating memory and causing instability.
-
-### Tools
-*   `scan_orphaned_data()`: Reports unused meshes, materials, and armatures.
-*   `purge_orphans()`: Deterministically deletes phantom data.
-*   `check_linked_data()`: Warns if the user is about to edit a linked (library) asset and offers "Make Local" + Snapshot.
-
-## 3. 📸 Object-Level Snapshotting (The Surgeon's Undo)
-**Objective:** Restore *just* the horns or tail without reverting the whole scene.
-
-### Tools
-*   `snapshot_object(obj_name)`: Saves mesh geometry, shape keys, and materials to a temp `.blend` buffer.
-*   `restore_object_from_snapshot(obj_name, snapshot_id)`: Swaps the live object with the buffered version.
-*   **Auto-Hook**: MCP automatically calls `snapshot_object` before any destructive modifier (Decimate, Remesh) or boolean operation.
-
-## 4. 🚑 Viewport Survival (The Panic Button)
-**Objective:** Prevent the viewport from crashing the GPU driver.
-
-### Tools
-*   `emergency_viewport_downgrade()`: Instantly switches to Solid Mode, disables Modifiers, Transparency, Shadows, and Overlays.
-*   `material_preview_sandbox()`: Spawns a proxy sphere for shader edits, preventing "Live Mesh" corruption during material dev.
-
-## 5. 🦴 Rig & Armature Safeguards (The Chiropractor)
-**Objective:** Keep the skeleton valid for game engines.
-
-### Tools
-*   `audit_armature_health()`: Checks for bone count drift, hierarchy breaks, and roll corruption vs. baseline.
-*   `reset_pose_corruption()`: Clears invalid constraints, NaN transforms, and locked pose states.
-
-## 6. 🎭 Shape Key Lifesavers (The Viseme Guard)
-**Objective:** Prevent "Unity Import Failed" due to vertex mismatches.
-
-### Tools
-*   `check_shape_key_integrity()`: Scans for mismatched vertex counts and zeroed deltas.
-*   `diff_shape_keys()`: Compares current keys against the original import to highlight accidental drifts.
-
-## 7. 📤 Export-Time Reality Checks (The Gatekeeper)
-**Objective:** Fail fast in Blender, not slowly in Unity.
-
-### Tools
-*   `validate_export_readiness()`: Checks for unapplied scale, non-uniform transforms, inverted normals, and forbidden modifiers.
-*   `dry_run_export()`: Simulates the FBX export process to catch crash bugs without writing to disk.
-
-## 8. 🕵️ Crash Forensics (The Black Box)
-**Objective:** Turn random crashes into actionable data.
-
-### Logic
-*   **Fingerprint Logger**: On every operation, log: `Last_Action`, `Active_Object`, `Poly_Count`, `VRAM_Usage`.
-*   **Recovery Manifest**: On startup, check for a "dirty exit" and offer to restore the last auto-snapshot.
+**Core Philosophy:** Blender is a hostile environment for automation. It is stateful, leaky, and non-deterministic.
+**Goal:** Transform Blender from a chaotic workshop into a verified, transactional Control Plane.
 
 ---
 
-## 🚀 Implementation Matrix
+## 1. 🔒 Deterministic Operation Boundaries
+**Objective:** Prevent silent partial failure and "leaky" state changes.
 
-| Priority | Feature | Complexity | Why? |
-| :--- | :--- | :--- | :--- |
-| **CRITICAL** | `reset_blender_context` | Low | Fixes 50% of "Blender is broken" issues. |
-| **CRITICAL** | `snapshot_object` | Medium | Essential for non-destructive AI editing. |
-| **CRITICAL** | `emergency_viewport_downgrade` | Low | Prevents UI freezes/crashes. |
-| **HIGH** | `validate_export_readiness` | Medium | Saves hours of engine debugging. |
-| **HIGH** | `audit_armature_health` | High | Rigs are the #1 source of pain. |
-| **MED** | `purge_orphans` | Low | Keeps file size and RAM sane. |
+### Mechanism: Operation Sandboxing
+*   **Copy-on-Write**: Destructive ops (Decimate, Remesh) run on a *duplicate datablock* first.
+*   **Explicit Commit**: The result is only swapped in if the operation succeeds and passes validation.
+*   **Zero Tolerance**: Any "leak" to the original object triggers a rollback.
+
+## 2. ⚛️ Atomic Actions (All-or-Nothing)
+**Objective:** No broken rigs or half-applied modifiers left behind.
+
+### Mechanism: Atomic Execution Wrapper
+*   **Transaction Block**: `begin_transaction()` -> [Ops] -> `commit_transaction()`.
+*   **Auto-Rollback**: If step N fails, steps 1...(N-1) are reverted instantly.
+*   **Stack Integrity**: Ensures the Undo Stack is never left in a dirty state.
+
+## 3. 🚩 Dirty State & Baseline Hashing
+**Objective:** Catch corruption *before* it ruins the file.
+
+### Mechanism: Scene Dirty Flag Scanner
+*   **State Hash**: Calculates a hash of vertex counts, bone hierarchies, and shape key deltas.
+*   **Drift Alert**: Compares current state vs. `import_baseline_hash`. If they drift without authorization, the system locks.
+*   **Compiler Warnings**: Reports unapplied transforms or depsgraph desyncs *before* save/export.
+
+## 4. 🛡️ Non-Undoable Action Shield
+**Objective:** Protect the Undo Stack from invalidation.
+
+### Mechanism: Undo Guard
+*   **Snapshot-on-Danger**: Forces a full file snapshot before any operation known to bypass/corrupt Undo (e.g., Python `bpy.data` deletes).
+*   **Stack Watchdog**: Warns if the undo history is about to be cleared.
+
+## 5. ⚡ Resource Tripwires
+**Objective:** Turn crashes into recoverable events.
+
+### Mechanism: Hard Limits
+*   **VRAM Ceiling**: If usage > 90%, force viewport to Solid/Wireframe.
+*   **Poly-Count Cap**: Reject sub-division commands that would exceed system limits.
+*   **Texture Watchdog**: Auto-downscale 8k textures to 2k in viewport.
+
+## 6. 🧩 Add-on Firewall
+**Objective:** Stop untrusted code from breaking the scene.
+
+### Mechanism: Isolation
+*   **Touch Tracking**: Logs which add-on modified which datablock.
+*   **Quarantine**: Automatically disables an add-on if it throws uncaught exceptions during an MCP operation.
+
+## 7. 📤 Export Contract Enforcement
+**Objective:** Fail fast in Blender, not slowly in Unity/Unreal.
+
+### Mechanism: The Contract
+*   **Strict Validators**: Checks for N-Gons, Zero-Area Faces, Loose Verts, and Bone Naming Conventions.
+*   **Loud Failure**: Refuses to export FBX/GLB if the contract is violated. No silent coercion.
+
+## 8. 🕰️ Forensic Rewind
+**Objective:** Recover from "unknown" catastrophes.
+
+### Mechanism: Event Timeline
+*   **Timestamped Actions**: Every tool call is logged with a timestamp and state hash.
+*   **Time Travel**: Ability to revert to the state *before* the last crash using the auto-snapshots.
+
+---
+
+## 🚀 The Minimal Viable Core (MVC)
+
+To build this without boiling the ocean, we prioritize:
+
+1.  **Atomic Wrapper**: Wrap all `execute_script` calls in `try/except` with auto-undo.
+2.  **Snapshot-on-Danger**: Auto-checkpoint before `decimate`, `remesh`, or `join`.
+3.  **Export Contract**: A simple script to validate mesh integrity before export.
