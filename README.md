@@ -15,7 +15,7 @@
 
 | **Blender Bridge Interface & Operation** |
 | :---: |
-| ![Surgical Optimization Scan](captures/Screenshot%20from%202026-01-28%2023-51-24.png) |
+| ![Surgical Optimization Scan](Screenshot%20from%202026-01-28%2023-51-24.png) |
 
 ---
 
