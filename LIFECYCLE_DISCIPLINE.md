@@ -183,7 +183,8 @@
 ## 15. PERFORMANCE & WATCHDOG
 
 1. **Event Debouncing**: Thottle event listeners to prevent infinite loops and editor hangs.
-2. **Hard Limits**: Enforce `Max operations per tick` and `Max scan frequency`.
+2. **Knowledge Base Lookup**: Consult [BLENDER_FREEZE_KNOWLEDGE_BASE.md](./BLENDER_FREEZE_KNOWLEDGE_BASE.md) to predict and mitigate specific freeze vectors before operation.
+3. **Hard Limits**: Enforce `Max operations per tick` and `Max scan frequency`.
 3. **Yield Loops**: Long-running scans must yield execution to keep the Blender UI responsive.
 4. **Stale State Guard**: Introduce sequence numbers to detect if the AI is acting on state that changed during a multi-frame calculation.
 
@@ -194,6 +195,90 @@
 1. **Full State Snapshot**: Capture a complete state snapshot (relevant to the operation) before any mutation.
 2. **Auto-Rollback**: Any failure or unexpected crash during an operation MUST trigger an immediate rollback to the pre-operation snapshot.
 3. **Commit/Rollback Discipline**: Every multi-step operation follows the pattern: `Snapshot → Mutate → Validate → Commit | Rollback`.
+
+---
+
+## 17. UNIT NORMALIZATION PROTOCOL (Anti-Drift)
+
+1. **Unit-Agnostic Scaling**: Verify `Scene.unit_settings` (Metric vs. Imperial) before any transform mutation.
+2. **Normalize to "Vibe-Meters"**: All positional and scale data must be normalized to SI Meters (1.0 = 1 Meter) at the sync boundary.
+3. **Scale Invariant Enforcement**:
+    * If `Scene.unit_settings.scale_length` != 1.0, apply the inverse factor to all outgoing coordinates.
+    * If incoming data is unscaled, apply the current scene scale factor before applying to datablocks.
+4. **Coordinate Basis Audit**: Confirm the coordinate system basis (e.g., Z-Up vs. Y-Up) matches the external engine's contract before any matrix multiplication.
+
+---
+
+## 18. TOMBSTONE LIFECYCLE & REGISTRY GC
+
+1. **Archive Threshold**: Tombstoned UUIDs must be archived for a minimum of 30 days or 10 sessions before permanent deletion.
+2. **Resurrection Flow**: If a datablock is re-created with identical topology/name to a tombstoned entry, trigger a UUID recovery prompt or auto-rebind if confidence > 95%.
+3. **Registry Maintenance**: Perform a deterministic "Registry Purge" once per project lifecycle or on manual trigger to remove orphans that exceed the archive threshold.
+
+---
+
+## 19. MULTI-AGENT ARBITRATION (OBJECT LOCKING)
+
+1. **UUID-Level Locks**: An agent must claim an "Exclusive Lock" on a UUID before any mutation.
+2. **Conflict Resolution**: If a UUID is already locked by another process (Human or Agent), the secondary agent must:
+    * Enter `Wait` state.
+    * Notify the bridge of a `CONTENTION_LOCK`.
+    * Abort after a 5-second timeout.
+3. **Implicit Human Priority**: User manipulation (detected via UI interaction) always overrides and breaks an AI lock.
+
+---
+
+## 20. ENVIRONMENT & DEPENDENCY PINNING
+
+1. **Requirement Manifest**: All AI scripts must declare their required Python modules and Blender version range.
+2. **Pre-Flight Validation**: The bridge must compare the manifest against `sys.modules` and `bpy.app.version` before execution.
+3. **Module Isolation**: Block execution if any unauthorized/missing module is detected to prevent "Import Crashes."
+
+---
+
+## 21. RESOURCE & TOPOLOGY INTEGRITY
+
+1. **Topology Budgeting**: AI agents MUST perform a complexity scan before any mesh mutation.
+    * **Hard Cap**: Reject operations that would result in >1M polygons per object or >5M per scene without explicit human override.
+    * **Integrity Check**: Mandate a `non-manifold` edge check for all geometry operations.
+2. **The "Fake User" Shield**: To prevent Blender's garbage collector from deleting unlinked data:
+    * Set `use_fake_user = True` on all newly created or modified Actions, Materials, and Meshes before unlinking or re-assigning.
+    * Only unset `use_fake_user` during an explicit `Purge` operation.
+3. **Cumulative Modifier Guard**: Before applying or adding modifiers (especially Subsurf, Array, or Boolean):
+    * Calculate the estimated vertex delta.
+    * Block the operation if the cumulative VRAM impact exceeds 80% of the hardware sentinel's available memory.
+
+---
+
+## 22. FREEZE PREVENTION & THREAD SAFETY
+
+1. **Non-Blocking Execution**: AI-generated scripts must utilize `bpy.app.timers` or `Modal Operators` for any operation that takes >100ms.
+2. **Marshaled Mutations**:
+    * Background threads are for **Compute/IO only**.
+    * Use a thread-safe queue to pass results to a main-thread consumer.
+    * Never access `bpy.context` or `bpy.data` from outside the main thread.
+3. **Undo-Safe Batching**: For mass renaming, vertex group updates, or material swaps:
+    * Disable `use_global_undo`.
+    * Perform batch.
+    * Push a single undo step manually (`bpy.ops.ed.undo_push`).
+    * Re-enable `use_global_undo`.
+4. **I/O Timeouts**: Every external call (Socket, HTTP, Subprocess) must have a hard timeout (default 5s) to prevent the "Spinning Wheel" hang.
+
+---
+
+## 23. BLENDER FREEZE KNOWLEDGE BASE (AI REFERENCE)
+
+| Category | Source | Cause | Symptoms | Fix / Prevention |
+| :--- | :--- | :--- | :--- | :--- |
+| **Python** | Infinite loops | Tight loops with no yield | UI Hang | Use modal timers/operators; yield control. |
+| **Python** | Heavy CPU Work | Large `bpy` calcs | Unresponsive | Offload to background threads. |
+| **Python** | Blocking I/O | Sync file/net calls | Freeze | Non-blocking I/O; 5s Timeouts. |
+| **Python** | Thread Safety | `bpy.data` from side threads | Crash/Hang | Marshal to main thread via queue. |
+| **Scene** | High-poly Meshes | >1M vertex density | Viewport Stall | Decimate; Simplify; Bounding Box. |
+| **Scene** | Modifier Stacks | Deep/Recursive eval | Update Hang | Collapse stacks; Apply non-essential. |
+| **GPU** | Cycles/Eevee | Complex shaders/16k images | TDR Crash | Reduce Tile Size; Mipmaps. |
+| **Undo** | History Spikes | Mass batch edits | History Hang | Disable `use_global_undo` for batches. |
+| **Memory** | Data Spikes | Large temp buffers | Hard Crash | Delete temp blocks; Use generators. |
 
 ---
 

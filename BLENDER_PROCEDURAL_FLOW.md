@@ -19,80 +19,45 @@
 ## FLOW 1 — CAPABILITY & STATE LOAD
 
 5. Query editor capabilities (undo depth, auto-save interval). Adjust behavior accordingly.
-6. Load UUID registry from datablock custom properties and sidecar registry file (backup).
-7. Validate registry schema and version. If mismatch, run migration or abort.
-8. If registry missing → initialize empty registry.
+6. **Environment Check**: Validate Python dependency manifest against `sys.modules`. Abort on mismatch.
+7. Load UUID registry from datablock custom properties and sidecar registry file (backup).
+8. Validate registry schema and version. If mismatch, run migration or abort.
+9. If registry missing → initialize empty registry.
 
 ---
 
 ## FLOW 2 — INDEX DATA
-
-9. Scan all datablocks (Objects, Meshes, Materials, Armatures, Actions, Images, Collections).
-10. Build map: `UUID → datablock reference`.
-
----
-
-## FLOW 3 — ENFORCE IDENTITY
-
-11. For each datablock:
-    * If UUID exists → continue.
-    * If UUID missing → generate UUID and write to datablock custom property.
-12. Detect duplicate UUIDs. On collision:
-    * Freeze operations.
-    * Regenerate UUID for newest datablock and persist immediately.
-
----
-
-## FLOW 4 — SNAPSHOT & LOG CONSULTATION (MANDATORY)
-
-13. Serialize snapshot (UUID ↔ name, type, and external references).
-14. **Consult Audit Logs**: Query the log index for prior failures, incomplete transactions, or crash flags associated with target UUIDs.
-15. Timestamp snapshot.
-16. Abort if snapshot incomplete or log consultation indicates terminal instability.
-
----
-
+...
 ## FLOW 5 — EXECUTE OPERATION (TRANSACTIONAL)
 
-17. Wrap operation in a transaction: `begin → mutate → validate → commit | rollback`.
-18. Resolve all targets **by UUID only**.
-19. Never store long-lived Python object references.
-20. Serialize writes through a **single writer queue** (One write at a time).
+16. **Claim Lock**: Claim UUID-level lock for target datablocks. Abort on contention.
+17. **Resource Audit**: Pre-calculate topology/VRAM impact. Abort if the budget is exceeded as per [LIFECYCLE_DISCIPLINE.md](./LIFECYCLE_DISCIPLINE.md).
+18. **Freeze-Proofing Check**: If the operation is a large batch, disable `use_global_undo`.
+19. Wrap operation in a transaction: `begin → mutate → validate → commit | rollback`.
+20. **Persistence Shield**: Apply `use_fake_user = True` to all modified/unlinked datablocks.
+21. Resolve all targets **by UUID only**.
+22. **Main Thread Only**: Ensure all `bpy` mutations are executed on the main thread.
+23. Serialize writes through a **single writer queue** (One write at a time).
 
 ---
 
 ## FLOW 6 — STABILITY & MONITOR
-
-20. Monitor for repeated exceptions, undo stack corruption, or UI freeze.
-21. If instability detected:
-    * Abort operation and roll back to snapshot.
-    * Disable automation and preserve state.
-
----
-
-## FLOW 7 — RECOVERY & RELOAD
-
-**Triggered on: Undo/Redo, File Reload, Auto-save restore, Script Reload.**
-
-22. Drop all cached datablock references (handles are volatile).
-23. Re-scan all datablocks and rebuild: `UUID → datablock reference`.
-24. Rebind external links (Unity/server) via UUID.
-
----
-
+...
 ## FLOW 8 — INTERCEPT & SELF-HEAL
 
 25. **Duplication**: Detect duplicated datablocks; regenerate UUID for the duplicate immediately.
 26. **Deletion**: Detect deletion; tombstone UUID, notify external systems, and archive mapping.
-27. **Discovery**: Assign UUIDs to newly discovered datablocks. Never auto-resolve ambiguous matches.
+27. **Resurrection**: On datablock re-creation, attempt UUID recovery from archived tombstone mappings.
+28. **Discovery**: Assign UUIDs to newly discovered datablocks. Never auto-resolve ambiguous matches.
 
 ---
 
 ## FLOW 9 — VALIDATE & AUDIT
 
-28. Validate UUID uniqueness, registry parity, and external mapping validity.
-29. Emit structured logs (Timestamp, UUID, Operation, Result).
-30. Persist registry and logs. Ensure logs are replayable for recovery.
+29. **Unit Normalization**: Verify and normalize all transform data to SI Meters (1.0 = 1 Meter).
+30. Validate UUID uniqueness, registry parity, and external mapping validity.
+31. Emit structured logs (Timestamp, UUID, Operation, Result).
+32. Persist registry and logs. Ensure logs are replayable for recovery.
 
 ---
 

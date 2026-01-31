@@ -92,7 +92,21 @@ This document defines the non-negotiable structural constraints for AI-generated
 *   **Safety Protocols**: All operations must strictly follow the lifecycle, IO, and crash recovery rules defined in [LIFECYCLE_DISCIPLINE.md](./LIFECYCLE_DISCIPLINE.md).
 *   **Performance Watchdog**: Enforce throttling, debouncing, and yield loops to prevent editor hangs and infinite loop spirals.
 *   **Atomic Snapshots**: All mutations require a pre-operation snapshot and must be safe to auto-rollback on any failure.
+*   **Unit Normalization**: All transform data must be normalized to SI Meters (1.0 = 1 Meter) before cross-boundary sync.
+*   **Object Arbitration**: Agents must claim UUID-level locks; human interaction always breaks an AI lock.
+*   **Dependency Pinning**: Scripts must declare dependencies; the bridge must block execution on environment mismatch.
+*   **Resource Integrity**: Enforce topology budgets (polygons caps) and cumulative modifier guards to prevent VRAM overflows.
+*   **Data Persistence**: Use the "Fake User" shield (`use_fake_user = True`) for all unlinked datablocks to prevent accidental deletion.
 *   **Zero Trust IO**: All file IO and asset imports must be treated as untrusted and validated against race conditions.
+
+## 21. Blender Freeze Prevention (AI Operational Mandates)
+*   **Knowledge Base Consultation**: The AI MUST consult the "Blender Freeze Knowledge Base" in [LIFECYCLE_DISCIPLINE.md](./LIFECYCLE_DISCIPLINE.md) before high-impact operations.
+*   **No Blocking Loops**: Never execute infinite or tight loops in the main thread. Use modal timers or yield execution.
+*   **Async-Only I/O**: All network and external process calls MUST use non-blocking patterns with explicit timeouts.
+*   **Undo Management**: Disable global undo (`use_global_undo = False`) before executing batch operations (>100 objects or >50k vertices) to prevent history spikes.
+*   **Thread Safety**: NEVER attempt to mutate `bpy.data` from a background thread. All mutations must be marshaled to the main thread.
+*   **Memory Hygiene**: Explicitly delete temporary data-blocks and large lists/buffers after use to prevent RAM fragmentation.
+*   **Viewport Awareness**: For high-complexity tasks, automatically switch the viewport to `Bounding Box` or enable `Simplify` before proceeding.
 
 ## The Meta-Rule
 If a proposed solution is unusually short, clever, or bypasses a limitation, assume it is wrong. Prioritize safety and explicit verification over brevity.

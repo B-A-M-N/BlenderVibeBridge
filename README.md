@@ -132,11 +132,12 @@ To maintain a secure and deterministic environment, this project follows strict 
 ### 🛠️ For Engineers & Power Users
 *   **[Technical Installation Guide](HUMAN_ONLY/INSTALL.md)**: Deep dive into architecture, AST auditing, and main-thread dispatching.
 *   **[Technical Architecture](HUMAN_ONLY/TECHNICAL_ARCHITECTURE.md)**: Details on the split-thread consumer model and context overrides.
+*   **[Coordinate Systems & Normalization](HUMAN_ONLY/COORDINATE_SYSTEMS.md)**: Formulas for Vibe-Meters and Axis Translation.
+*   **[Testing & Validation Guide](HUMAN_ONLY/TESTING_GUIDE.md)**: Procedures for Unit, Integration, and Security testing.
 *   **[AI Engineering Constraints](AI_ENGINEERING_CONSTRAINTS.md)**: The "AI Constitution" — non-negotiable safety and structural rules.
 *   **[Blender AI Procedural Workflow](BLENDER_PROCEDURAL_WORKFLOW.md)**: Mandatory procedural steps for identity and state management.
 *   **[Blender AI Procedural Flow](BLENDER_PROCEDURAL_FLOW.md)**: Absolute execution order for AI operations in Blender.
 *   **[Vibe Lifecycle Discipline](LIFECYCLE_DISCIPLINE.md)**: Final safety addendum for lifecycle and IO integrity.
-*   **[Extended Procedural Supplement](PROCEDURAL_SUPPLEMENT.md)**: Advanced execution flows for AI-to-Editor determinism.
 *   **[ISA Specification](ISA_SPEC.md)**: The Instruction Set Architecture (Opcodes and Intent Binding).
 *   **[Blender Kernel Tool Inventory](MCP_BLENDER_KERNEL.md)**: Exhaustive list of all low-level tools and capabilities.
 
@@ -144,7 +145,6 @@ To maintain a secure and deterministic environment, this project follows strict 
 *   **[Security Policy](HUMAN_ONLY/SECURITY.md)**: Vulnerability reporting and baseline security mandates.
 *   **[Security & Architecture Deep Dive](HUMAN_ONLY/SECURITY_DOCS.md)**: The "Iron Box" safety model explained.
 *   **[Failure Modes & Recovery](HUMAN_ONLY/FAILURE_MODES.md)**: Taxonomy of terminal vs. recoverable failures.
-*   **[Failure Post-Mortem Guide](HUMAN_ONLY/FAILURE_POSTMORTEM.md)**: Forensic analysis procedures for scene corruption or hangs.
 
 ### 📜 Doctrine & Legal
 *   **[Non-Goals & Doctrine](NON_GOALS.md)**: Intentional limitations to prevent "AI Psychosis."

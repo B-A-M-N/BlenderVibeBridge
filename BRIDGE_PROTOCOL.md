@@ -24,3 +24,6 @@ All operations must strictly adhere to the [BLENDER_PROCEDURAL_WORKFLOW.md](./BL
 
 ## 6. Vibe Lifecycle Discipline
 Strict adherence to [LIFECYCLE_DISCIPLINE.md](./LIFECYCLE_DISCIPLINE.md) is required for lifecycle, IO safety, and crash recovery. AI agents must pause automation during user manipulation and respect the failure thresholds.
+
+## 7. Environment & Unit Validation
+Agents MUST normalize all transform data to SI Meters before transmission. The Bridge Kernel will reject any payload that violates the declared dependency manifest or unit normalization contract.
