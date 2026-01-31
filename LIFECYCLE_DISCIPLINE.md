@@ -311,6 +311,17 @@
 
 ---
 
+## 28. INVARIANCE AMPLIFIERS (Mechanical Hardening)
+
+1.  **Hash-Chaining (WAL)**: Every WAL entry MUST include the `prev_hash` of the preceding entry, creating a cryptographic chain of custody for all state changes.
+2.  **Force-Fed Context**: Every AI response from the Bridge Kernel MUST include a header containing the `scene_hash`, `wal_hash`, and `monotonic_tick`.
+3.  **Hard Gate (Proof-of-Work)**: `commit_transaction` MUST require a `technical_rationale_check` object that explicitly matches the hashes provided in the "Force-Fed Context."
+4.  **Dual-Witness Rule**: No fact is marked `CONFIRMED` unless witnessed by two independent sources (e.g., Blender Data API + Bridge WAL state).
+5.  **Preflight/Postflight**: Every mutation follows: `Snapshot → Preflight Verify → Execute → Postflight Verify → Commit`.
+6.  **Silence as Error**: If the heartbeat `monotonic_tick` fails to increment within the expected window (1000ms), all mutations are automatically blocked.
+
+---
+
 ## REQUIRED LOG STRUCTURE (MINIMUM)
 
 

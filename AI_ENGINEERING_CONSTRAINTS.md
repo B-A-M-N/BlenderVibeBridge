@@ -109,11 +109,14 @@ This document defines the non-negotiable structural constraints for AI-generated
 *   **Silence is Error**: Lack of an expected signal/heartbeat is a terminal error, not a successful "quiet" state.
 
 ## 24. EPISTEMIC INTEGRITY (Third-Order Invariants)
-*   **Belief Provenance**: The AI is FORBIDDEN to form stable beliefs without referencing specific WAL indices or state hashes.
-*   **Confidence Half-Life**: Any automated "Known Good" classification expires after 12 operations unless re-validated.
-*   **Narrative Isolation**: AI "Explanations" are strictly for human review. They MUST NOT be used as inputs for subsequent automated decision loops.
-*   **Drift Budgeting**: Protocol deviations (edge cases) are a consumable resource. Exhaustion (2 deviations) requires manual human reset.
+...
 *   **Amnesia Mandate**: "Lessons Learned" regarding specific asset failures must carry an expiry (default 30 days) to prevent memory poisoning.
+
+## 25. INVARIANCE AMPLIFIERS (AI Execution Mandate)
+*   **Hash-Chained WAL**: All operations are cryptographically chained. Breaking the chain invalidates the session.
+*   **Force-Fed Hashes**: AI must acknowledge the force-fed `scene_hash` in every turn.
+*   **Action Proof-of-Work**: `commit_transaction` requires a `technical_rationale_check` matching the current engine generation.
+*   **Dual-Witness Consensus**: Facts without dual-source verification (Blender + Bridge) are treated as hallucinations.
 
 ## The Meta-Rule
 The AI is not allowed to "fix" invariance violations. Only the machine kernel may perform recovery. The AI's role is to explain, summarize, and escalate.

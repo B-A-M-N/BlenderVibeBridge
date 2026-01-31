@@ -46,17 +46,33 @@ ENTROPY_USED = 0
 os.makedirs(os.path.dirname(AUDIT_LOG_PATH), exist_ok=True)
 
 class AuditLogger:
-...
+    _last_hash = "ROOT"
+
     @staticmethod
     def log_mutation(method, path, data, response):
         global ENTROPY_USED
         ENTROPY_USED += 1
+        
+        # Calculate Chained Hash
+        import hashlib
+        h = hashlib.sha256()
+        h.update(f"{AuditLogger._last_hash}{method}{path}{json.dumps(data)}".encode())
+        current_hash = h.hexdigest()
+        
         entry = {
             "timestamp": datetime.datetime.now().isoformat(),
-...
+            "method": method,
+            "path": path,
+            "request_data": data,
+            "response": response,
             "capability": data.get("capability", "UNKNOWN") if data else "UNKNOWN",
-            "entropy_used": ENTROPY_USED
+            "entropy_used": ENTROPY_USED,
+            "prev_hash": AuditLogger._last_hash,
+            "entry_hash": current_hash
         }
+        
+        AuditLogger._last_hash = current_hash
+        
         with open(AUDIT_LOG_PATH, "a") as f:
             f.write(json.dumps(entry) + "\n")
 
@@ -214,9 +230,23 @@ def begin_transaction() -> str:
     return str(blender_request("POST", "/command", data={"type": "system_op", "action": "begin_transaction", "intent": "GENERAL"}, is_mutation=True))
 
 @mcp.tool()
-def commit_transaction() -> str:
-    """THE ARCHIVIST: Finalizes and saves the current multi-command transaction."""
-    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "commit_transaction", "intent": "GENERAL"}, is_mutation=True))
+def commit_transaction(rationale_check: str) -> str:
+    """THE ARCHIVIST: Finalizes the current multi-command transaction.
+    HARD GATE: Requires a JSON rationale_check containing the current 'scene_hash' 
+    to prove the AI has processed the force-fed context."""
+    try:
+        check = json.loads(rationale_check)
+        if "scene_hash" not in check:
+            return "Error: Hard Gate Violation. 'scene_hash' missing from rationale_check."
+        
+        # Verify the hash matches the current state
+        current_state = blender_request("GET", "/blender/scene_state")
+        if current_state.get("scene_hash") != check["scene_hash"]:
+            return f"Error: Hash Mismatch. Action blocked. Expected {current_state.get('scene_hash')}, got {check['scene_hash']}."
+            
+        return str(blender_request("POST", "/command", data={"type": "system_op", "action": "commit_transaction", "intent": "GENERAL", "rationale": check}, is_mutation=True))
+    except Exception as e:
+        return f"Error processing Hard Gate: {str(e)}"
 
 @mcp.tool()
 def rollback_transaction() -> str:
