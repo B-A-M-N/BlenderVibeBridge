@@ -144,7 +144,8 @@ To maintain a secure and deterministic environment, this project follows strict 
 ### 🛡️ Security & Failure Protocols
 *   **[Security Policy](HUMAN_ONLY/SECURITY.md)**: Vulnerability reporting and baseline security mandates.
 *   **[Security & Architecture Deep Dive](HUMAN_ONLY/SECURITY_DOCS.md)**: The "Iron Box" safety model explained.
-*   **[Failure Modes & Recovery](HUMAN_ONLY/FAILURE_MODES.md)**: Taxonomy of terminal vs. recoverable failures.
+*   **[Agent Isolation Architecture](HUMAN_ONLY/AGENT_ISOLATION.md)**: Multi-agent sandboxing to prevent context poisoning.
+*   **[Freeze-Proofing & Recovery Guide](HUMAN_ONLY/FREEZE_PROOFING.md)**: Prevention and recovery from Blender hangs and crashes.
 
 ### 📜 Doctrine & Legal
 *   **[Non-Goals & Doctrine](NON_GOALS.md)**: Intentional limitations to prevent "AI Psychosis."
