@@ -43,6 +43,7 @@ graph LR
 ## 🛡️ Non-Negotiable Constraints (The AI Constitution)
 *   **Zero Trust**: Assume all external assets are malicious. Verify everything.
 *   **Read-Before-Write**: Always `Inspect → Validate → Mutate → Verify`.
+*   **Procedural Discipline**: All operations MUST follow the [BLENDER_PROCEDURAL_WORKFLOW.md](./BLENDER_PROCEDURAL_WORKFLOW.md) and [BLENDER_PROCEDURAL_FLOW.md](./BLENDER_PROCEDURAL_FLOW.md) for identity and state management.
 *   **Confidence is not Evidence**: Trust the telemetry (hashes, vertex counts), not the AI's verbal assurance.
 *   **Atomic Transactions**: Wrap all multi-step mutations in `begin_transaction` and `commit_transaction`.
 *   **Workspace Hygiene**: Store ALL temporary/diagnostic files in `avatar_scripts/`. NEVER pollute the root.

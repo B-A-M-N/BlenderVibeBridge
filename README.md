@@ -133,6 +133,8 @@ To maintain a secure and deterministic environment, this project follows strict 
 *   **[Technical Installation Guide](HUMAN_ONLY/INSTALL.md)**: Deep dive into architecture, AST auditing, and main-thread dispatching.
 *   **[Technical Architecture](HUMAN_ONLY/TECHNICAL_ARCHITECTURE.md)**: Details on the split-thread consumer model and context overrides.
 *   **[AI Engineering Constraints](AI_ENGINEERING_CONSTRAINTS.md)**: The "AI Constitution" — non-negotiable safety and structural rules.
+*   **[Blender AI Procedural Workflow](BLENDER_PROCEDURAL_WORKFLOW.md)**: Mandatory procedural steps for identity and state management.
+*   **[Blender AI Procedural Flow](BLENDER_PROCEDURAL_FLOW.md)**: Absolute execution order for AI operations in Blender.
 *   **[ISA Specification](ISA_SPEC.md)**: The Instruction Set Architecture (Opcodes and Intent Binding).
 *   **[Blender Kernel Tool Inventory](MCP_BLENDER_KERNEL.md)**: Exhaustive list of all low-level tools and capabilities.
 

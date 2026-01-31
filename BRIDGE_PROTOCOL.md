@@ -18,3 +18,6 @@ If a tool returns an error, the agent MUST call `get_vibe_audit_log` immediately
 
 ## 4. Transaction Management
 For complex operations, use `begin_transaction()` and `commit_transaction()` to preserve the Mutation Budget and ensure atomic undo states.
+
+## 5. Blender AI Procedural Workflow
+All operations must strictly adhere to the [BLENDER_PROCEDURAL_WORKFLOW.md](./BLENDER_PROCEDURAL_WORKFLOW.md) and [BLENDER_PROCEDURAL_FLOW.md](./BLENDER_PROCEDURAL_FLOW.md) to ensure identity stability across file reloads and undo/redo cycles. Use UUIDs as the primary key for all datablock references.

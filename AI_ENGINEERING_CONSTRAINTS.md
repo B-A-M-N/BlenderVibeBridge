@@ -49,42 +49,16 @@ This document defines the non-negotiable structural constraints for AI-generated
 
 ## 11. Identity Stability
 *   **References**: `bpy.types.Object` references in Python can become invalid if the object is deleted or the file is reloaded. Use names or persistent pointers if available/safe. Use `audit_identity` to verify state.
+*   **UUID Enforcement**: All datablocks must be managed via UUIDs as defined in [BLENDER_PROCEDURAL_WORKFLOW.md](./BLENDER_PROCEDURAL_WORKFLOW.md) and [BLENDER_PROCEDURAL_FLOW.md](./BLENDER_PROCEDURAL_FLOW.md).
 
 ## 12. No Blender Tricks (Persistence Ban)
-*   **No Handlers**: Registration of `bpy.app.handlers` (e.g., `load_post`, `save_pre`, `frame_change_post`) is STRICTLY FORBIDDEN.
-*   **No Background Timers**: Unauthorized use of `bpy.app.timers` to create persistent background processes is blocked.
-
-## 13. Idempotence & Read-Before-Write
-*   **Atomic Idempotence**: All mutation tools MUST be idempotent. Repeating a request should have no side effects beyond the first successful application.
-*   **RBW Loop**: Every mutation must follow the sequence: `Inspect (Tool)` -> `Validate (Logic)` -> `Mutate (Tool)` -> `Verify (Tool)`.
-*   **Mandatory Reconciliation**: Before any complex multi-step mutation (e.g., character rigging, scene lighting setup), the AI MUST call `reconcile_state` to sync its internal world-model with the bridge.
-
-## 14. Asset Integrity & Scanning
-*   **Mandatory Scan**: All external assets (`.blend`, `.fbx`, `.obj`, `.glb`, etc.) MUST be scanned via `scan_external_asset` before any import or link operation.
-*   **No Auto-Run**: The bridge MUST NOT enable Blender's "Auto-run Python Scripts" preference.
-*   **Script Block**: Any asset found containing embedded Python `import` or `exec` signatures must be rejected.
-
-## 15. Tool Selection Priority (The Hierarchy)
-*   **Level 1: High-Level MCP Tools**: Always prefer `transform_object`, `manage_modifier`, `setup_lighting`, etc. over raw script execution.
-*   **Level 2: Atomic Sandbox**: If no high-level tool exists, use `sandbox_modify_object` to test changes on a clone before applying.
-*   **Level 3: Low-Level Scripting**: `exec_script` is a last resort and REQUIRES a specific, detailed explanation of why high-level tools were insufficient.
-
-## 16. Failure Recovery & Hardware Sentinel
-*   **Consult Logs First**: If an operation fails (`status: ERROR` or `BLOCKED`), the AI MUST call `get_blender_errors()` and inspect `logs/vibe_audit.jsonl` BEFORE asking the user or retrying.
-*   **Hardware Awareness**: Respect `ResourceMonitor` blocks. If blocked by `RAM CRITICAL` or `VRAM LOW`, the AI must wait, suggest purging orphans (`purge_orphans`), or downscaling resolutions before proceeding.
-*   **Transaction Rollback**: If a transaction fails, `rollback_transaction` MUST be called to restore the last known good state.
-*   **Bridge Protocol Handshake**: All tool interactions MUST strictly adhere to [BRIDGE_PROTOCOL.md](./BRIDGE_PROTOCOL.md).
-*   **Failure Thresholds**: 
-    - Failure count > 50: Enter `READ_ONLY` mode.
-    - Failure count > 100: Enter `BLOCKED` mode.
-    - (Thresholds increased to prevent lockdown during iterative development).
-
-## 17. Heartbeat & Progress Monitoring
-*   **Heavy Ops**: For long-running operations (Baking, IO, Physics), the AI MUST periodically call `check_heartbeat()` to track the `progress` field.
-*   **Activity Gating**: If a command response is delayed, the AI MUST assume the user is performing a manual stroke and wait patiently rather than spamming retries.
-
+...
 ## 18. Headless CI/CD Support
 *   **Background Detection**: When `get_scene_telemetry()` shows no active windows, the AI MUST avoid viewport-specific commands (e.g., `set_viewport_shading`) and focus on data-only mutations.
+
+## 19. Blender AI Procedural Workflow
+*   **Mandatory Adherence**: All AI operations must follow the steps defined in [BLENDER_PROCEDURAL_WORKFLOW.md](./BLENDER_PROCEDURAL_WORKFLOW.md) and the execution order in [BLENDER_PROCEDURAL_FLOW.md](./BLENDER_PROCEDURAL_FLOW.md).
+*   **UUID Authoritative**: Names are cosmetic; UUIDs stored in datablock custom properties are the authoritative source of identity.
 
 ## The Meta-Rule
 If a proposed solution is unusually short, clever, or bypasses a limitation, assume it is wrong. Prioritize safety and explicit verification over brevity.

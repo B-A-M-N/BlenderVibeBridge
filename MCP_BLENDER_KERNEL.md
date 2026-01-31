@@ -22,6 +22,7 @@
 ### 🧹 State Hygiene
 *   **Orphaned Datablock Purge**: Deterministically deletes unused meshes/materials.
 *   **Dependency Tracker**: Detects missing textures or linked library drift. (**ACTIVE**)
+*   **UUID Identity Registry**: Mandatory UUID-based management of all datablocks to survive file reloads and undo/redo cycles as defined in [BLENDER_PROCEDURAL_WORKFLOW.md](./BLENDER_PROCEDURAL_WORKFLOW.md) and [BLENDER_PROCEDURAL_FLOW.md](./BLENDER_PROCEDURAL_FLOW.md). (**ACTIVE**)
 
 ### 📤 Pipeline Gate
 *   **Export Contract Enforcer**: Hard-fails export if Scale != 1, Normals are inverted, or N-Gons exist. (**ACTIVE**)
