@@ -4,12 +4,26 @@
 > **EXPERIMENTAL & IN-DEVELOPMENT**  
 > This project is currently an active research prototype. APIs, security protocols, and core logic are subject to rapid, breaking changes. This software performs mutations on 3D scenes; **MANDATORY BACKUPS** are required before use.
 
+---
+
+🔰 **Not Technical? Start Here!**  
+If you’re new to AI-assisted Blender workflows, don’t worry. We’ve created a **[Complete Beginner's Manual](HUMAN_ONLY/FOR_BEGINNERS.md)** that explains everything step by step, from setup to safe usage.
+
+---
+
 ### The "One-Click" Technical Director for 3D Creation & Mastery
 *A production-grade AI control interface for deterministic, undo-safe Blender operations.*
 
-**BlenderVibeBridge** is a professional-grade intelligent interface that transforms Blender into a **Governed Geometry Kernel**. It allows AI agents to interact safely, deterministically, and artistically with Blender’s core engine—turning natural language intents into professional production operations.
+**BlenderVibeBridge lets external tools and AI systems control Blender safely, without giving them unrestricted Python access.** 
 
-**In simpler terms**: It is a secure "remote control" for Blender that lets AI make changes to your 3D scenes while strictly preventing them from breaking your files or crashing the system.
+It is a professional-grade intelligent interface that transforms Blender into a **Governed Geometry Kernel**. It allows AI agents to interact safely, deterministically, and artistically with Blender’s core engine—turning natural language intents into professional production operations.
+
+| **Capability** | **Feature** |
+| :--- | :--- |
+| 🛡️ **Iron Box** | Zero-trust security via AST Auditing, Behavioral Circuit Breakers, and local binding. |
+| ⚛️ **Kernel Integrity** | Real-time invariant enforcement (No negative scales, no non-manifold geometry). |
+| 🏃 **Stable Motion** | Thread-safe main-loop dispatching via `bpy.app.timers` (No crashes). |
+| 🧠 **Epistemic Control** | Truth-reconciliation tools that prevent AI hallucinations about scene state. |
 
 ### 🎯 Target Audience
 *   **Technical Directors & Pipeline Engineers** seeking secure AI automation.
@@ -43,13 +57,6 @@ This project answers a critical engineering question:
 > *How do you let an AI act inside a complex, stateful application—without trusting it?*
 
 **The answer is: You don’t. You constrain it.**
-
-| **Capability** | **Feature** |
-| :--- | :--- |
-| 🛡️ **Iron Box** | Zero-trust security via AST Auditing, Behavioral Circuit Breakers, and local binding. |
-| ⚛️ **Kernel Integrity** | Real-time invariant enforcement (No negative scales, no non-manifold geometry). |
-| 🏃 **Stable Motion** | Thread-safe main-loop dispatching via `bpy.app.timers` (No crashes). |
-| 🧠 **Epistemic Control** | Truth-reconciliation tools that prevent AI hallucinations about scene state. |
 
 ---
 
@@ -202,6 +209,13 @@ Before committing to any "unique" or high-impact change, force the AI to find it
 
 **Why it works**:
 It forces the model to switch its search parameters from "Success Patterns" to "Failure Patterns." This grounding often reveals hidden technical debt, edge cases, or logic errors that the AI originally glossed over just to be "helpful."
+
+## 🌐 The Vibe Ecosystem
+
+BlenderVibeBridge is part of a suite of tools designed for secure, AI-governed creative production:
+
+*   **[UnityVibeBridge](https://github.com/B-A-M-N/UnityVibeBridge)**: The sibling project for AI-governed Unity Editor operations and VRChat avatar production.
+*   **[VibeSync](https://github.com/B-A-M-N/VibeSync)**: Real-time synchronization and orchestration for multi-engine AI pipelines.
 
 ---
 
