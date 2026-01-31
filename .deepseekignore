@@ -1,2 +1,5 @@
 HUMAN_ONLY/
 HUMAN_ONLY/
+!bridge.log
+!avatar_scripts/
+!logs/vibe_audit.jsonl

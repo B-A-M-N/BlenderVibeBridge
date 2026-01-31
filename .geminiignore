@@ -1,2 +1,6 @@
 HUMAN_ONLY/
-HUMAN_ONLY/
+!captures/ref1.png
+!captures/ref2.png
+!bridge.log
+!avatar_scripts/
+!logs/vibe_audit.jsonl

@@ -4,12 +4,12 @@
 production_vault/
 avatar_scripts/
 avatar_assets/
-captures/
+# captures/ (Moved to .git/info/exclude)
 
 # Logs & Temporary Files
 *.log
 *.tmp
-*.png
+# *.png (Moved to .git/info/exclude)
 __pycache__/
 .gemini_security/
 

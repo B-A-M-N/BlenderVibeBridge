@@ -15,7 +15,7 @@ bl_info = {
     "category": "Pipeline",
 }
 
-import bpy, os, json, time, math, mathutils, ast, uuid, hashlib, sys
+import bpy, os, json, time, math, mathutils, ast, uuid, hashlib, sys, threading, http.server
 
 # --- CONFIGURATION ---
 VIBE_TOKEN = "VIBE_BRIDGE_SECURE_TOKEN_2026"
@@ -24,6 +24,34 @@ INBOX_PATH = os.path.join(BASE_PATH, "vibe_queue", "inbox")
 OUTBOX_PATH = os.path.join(BASE_PATH, "vibe_queue", "outbox")
 LOG_PATH = os.path.join(BASE_PATH, "bridge.log")
 METADATA_PATH = os.path.join(BASE_PATH, "metadata", "vibe_health.json")
+
+# --- HTTP SERVER ---
+class VibeHTTPServer(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/health":
+            self.send_response(200); self.end_headers()
+            self.wfile.write(json.dumps({"status": "Ready"}).encode())
+        elif self.path == "/status":
+            ctx = get_ctx()
+            self.send_response(200); self.end_headers()
+            self.wfile.write(json.dumps(ctx).encode())
+        else:
+            self.send_response(404); self.end_headers()
+    def do_POST(self):
+        if self.path == "/command":
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data)
+            # Mutations must go through Airlock (Atomic/Safe)
+            # But we can trigger an immediate poll here
+            f_name = f"cmd_{uuid.uuid4()}.json"
+            with open(os.path.join(INBOX_PATH, f_name), "w") as f: json.dump(data, f)
+            self.send_response(200); self.end_headers()
+            self.wfile.write(json.dumps({"status": "Queued", "file": f_name}).encode())
+
+def start_http_server():
+    server = http.server.HTTPServer(('127.0.0.1', 22000), VibeHTTPServer)
+    server.serve_forever()
 
 # --- UTILITIES ---
 def get_host_fingerprint():
@@ -102,12 +130,12 @@ class ContextGuard:
 
 class ModelingKernel:
     INTENT_MAP = {
-        "OPTIMIZE": ["modifier_op", "mesh_op", "cleanup_op", "audit_op"],
+        "OPTIMIZE": ["modifier_op", "mesh_op", "cleanup_op", "audit_op", "bake_op"],
         "RIG": ["constraint_op", "vg_op", "unity_op", "audit_op"],
         "LIGHT": ["lighting_op", "world_op", "viewport_op", "node_op"],
         "ANIMATE": ["animation_op", "viseme_op", "system_op"],
-        "SCENE_SETUP": ["run_op", "io_op", "collection_op", "camera_op", "link_op", "curve_op", "material_op", "audio_op", "lock_op"],
-        "GENERAL": ["audit_op", "system_op", "render_op"]
+        "SCENE_SETUP": ["run_op", "io_op", "collection_op", "camera_op", "link_op", "curve_op", "material_op", "audio_op", "lock_op", "physics_op", "transform", "exec_script", "annotation_op"],
+        "GENERAL": ["audit_op", "system_op", "render_op", "macro_op"]
     }
 
     @staticmethod
@@ -226,7 +254,7 @@ class ModelingKernel:
                 elif op == "scale": obj.scale = val
             return "OK"
         elif cmd == "modifier_op":
-            obj = bpy.data.objects.get(data.get("name")),
+            obj = bpy.data.objects.get(data.get("name"))
             if obj:
                 action, mod_name = data.get("action"), data.get("mod_name")
                 if action == "add": obj.modifiers.new(name=mod_name, type=data.get("mod_type"))
@@ -239,7 +267,7 @@ class ModelingKernel:
                         for p, v in props.items(): setattr(m, p, ast.literal_eval(str(v)))
             return "OK"
         elif cmd == "node_op":
-            mat = bpy.data.materials.get(data.get("name")),
+            mat = bpy.data.materials.get(data.get("name"))
             if mat:
                 mat.use_nodes = True
                 if data.get("action") == "add": mat.node_tree.nodes.new(data.get("node_type"))
@@ -248,19 +276,19 @@ class ModelingKernel:
                     t.links.new(t.nodes.get(data.get("from_node")).outputs[0], t.nodes.get(data.get("to_node")).inputs[0])
             return "OK"
         elif cmd == "lighting_op":
-            l_data = bpy.data.lights.new(name=data.get("name"), type=data.get("type_light", "POINT")),
+            l_data = bpy.data.lights.new(name=data.get("name"), type=data.get("type_light", "POINT"))
             obj = bpy.data.objects.new(name=data.get("name"), object_data=l_data)
             bpy.context.collection.objects.link(obj); l_data.energy = float(data.get("energy", 10.0))
             return "OK"
         elif cmd == "material_op":
-            mat = bpy.data.materials.new(name=data.get("name")),
+            mat = bpy.data.materials.new(name=data.get("name"))
             mat.use_nodes = True
             if data.get("obj_name"):
                 obj = bpy.data.objects.get(data.get("obj_name"))
                 if obj: obj.data.materials.append(mat)
             return "OK"
         elif cmd == "physics_op":
-            obj = bpy.data.objects.get(data.get("name")),
+            obj = bpy.data.objects.get(data.get("name"))
             if obj:
                 if data.get("phys_type") == "CLOTH": obj.modifiers.new(name="Cloth", type='CLOTH')
                 elif data.get("phys_type") == "RIGID_BODY": 
@@ -270,7 +298,7 @@ class ModelingKernel:
             action = data.get("action")
             if action == "check_deps": return [bpy.path.abspath(img.filepath) for img in bpy.data.images if img.filepath and not os.path.exists(bpy.path.abspath(img.filepath))]
             elif action == "identity":
-                obj = bpy.data.objects.get(data.get("target")),
+                obj = bpy.data.objects.get(data.get("target"))
                 return f"{len(obj.data.vertices)}_{len(obj.material_slots)}" if obj and hasattr(obj.data, 'vertices') else "N/A"
             return "OK"
         elif cmd == "cleanup_op":
@@ -279,7 +307,7 @@ class ModelingKernel:
                     if bpy.ops.outliner.orphans_purge.poll(): bpy.ops.outliner.orphans_purge(do_local_ids=True, do_recursive=True)
             return "OK"
         elif cmd == "viseme_op":
-            obj = bpy.data.objects.get(data.get("name")),
+            obj = bpy.data.objects.get(data.get("name"))
             if obj and obj.type == 'MESH':
                 if not obj.data.shape_keys: obj.shape_key_add(name="Basis")
                 if data.get("viseme") not in obj.data.shape_keys.key_blocks: obj.shape_key_add(name=data.get("viseme"))
@@ -292,17 +320,99 @@ class ModelingKernel:
                 return "Valid" if all(b in obj.pose.bones for b in ["Hips", "Spine", "Head"]) else "Incomplete"
             return "OK"
         elif cmd == "animation_op":
-            obj = bpy.data.objects.get(data.get("name")),
+            obj = bpy.data.objects.get(data.get("name"))
             if obj: obj.keyframe_insert(data_path=data.get("prop"), frame=data.get("frame", 1))
             return "OK"
         elif cmd == "camera_op":
-            c_data = bpy.data.cameras.new(name=data.get("name")),
+            c_data = bpy.data.cameras.new(name=data.get("name"))
             obj = bpy.data.objects.new(name=data.get("name"), object_data=c_data)
             bpy.context.collection.objects.link(obj)
+            if data.get("active"): bpy.context.scene.camera = obj
+            return "OK"
+        elif cmd == "collection_op":
+            name, action, obj_name = data.get("name"), data.get("action"), data.get("obj_name")
+            col = bpy.data.collections.get(name) or bpy.data.collections.new(name)
+            if name not in bpy.context.scene.collection.children: bpy.context.scene.collection.children.link(col)
+            if action == "link" and obj_name:
+                obj = bpy.data.objects.get(obj_name)
+                if obj: col.objects.link(obj)
+            return "OK"
+        elif cmd == "link_op":
+            filepath, name, directory = data.get("filepath"), data.get("name"), data.get("directory")
+            with bpy.data.libraries.load(filepath, link=True) as (data_from, data_to):
+                if name in getattr(data_from, directory.lower() + "s"):
+                    getattr(data_to, directory.lower() + "s").append(name)
+            obj = getattr(bpy.data, directory.lower() + "s").get(name)
+            if obj and directory == "Object": bpy.context.collection.objects.link(obj)
+            return "OK"
+        elif cmd == "curve_op":
+            name, coords = data.get("name"), ast.literal_eval(data.get("coords"))
+            c_data = bpy.data.curves.new(name, type='CURVE'); c_data.dimensions = '3D'
+            spline = c_data.splines.new('POLY'); spline.points.add(len(coords)-1)
+            for i, coord in enumerate(coords): spline.points[i].co = (*coord, 1)
+            obj = bpy.data.objects.new(name, c_data); bpy.context.collection.objects.link(obj)
+            return "OK"
+        elif cmd == "audio_op":
+            bpy.ops.object.speaker_add(location=bpy.context.scene.cursor.location)
+            bpy.context.active_object.name = data.get("name")
+            return "OK"
+        elif cmd == "lock_op":
+            obj = bpy.data.objects.get(data.get("name"))
+            if obj:
+                l = data.get("lock", True)
+                obj.lock_location = (l, l, l); obj.lock_rotation = (l, l, l); obj.lock_scale = (l, l, l)
+            return "OK"
+        elif cmd == "constraint_op":
+            obj = bpy.data.objects.get(data.get("name"))
+            if obj:
+                action, c_type, c_name = data.get("action"), data.get("c_type"), data.get("c_name")
+                if action == "add": obj.constraints.new(type=c_type)
+                elif action == "remove":
+                    c = obj.constraints.get(c_name); 
+                    if c: obj.constraints.remove(c)
+            return "OK"
+        elif cmd == "world_op":
+            world = bpy.context.scene.world or bpy.data.worlds.new("World")
+            bpy.context.scene.world = world; world.use_nodes = True
+            bg = world.node_tree.nodes.get("Background")
+            if bg: bg.inputs[0].default_value = ast.literal_eval(data.get("color"))
+            return "OK"
+        elif cmd == "viewport_op":
+            for area in bpy.context.screen.areas:
+                if area.type == 'VIEW_3D': area.spaces.active.shading.type = data.get("mode", "SOLID")
+            return "OK"
+        elif cmd == "render_op":
+            path = os.path.join(BASE_PATH, "captures", f"cap_{int(time.time())}.png")
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            bpy.context.scene.render.filepath = path
+            bpy.ops.render.opengl(write_still=True)
+            return path
+        elif cmd == "bake_op":
+            bpy.ops.object.bake(type='COMBINED', margin=2, use_clear=True)
+            return "OK"
+        elif cmd == "annotation_op":
+            gp = bpy.data.grease_pencils.new("Annotation")
+            obj = bpy.data.objects.new("Annotation", gp); bpy.context.collection.objects.link(obj)
             return "OK"
         elif cmd == "io_op":
             if data.get("action") == "export_fbx": bpy.ops.export_scene.fbx(filepath=data.get("filepath"))
             return "OK"
+        elif cmd == "macro_op":
+            intent = data.get("intent")
+            if intent == "RECONSTRUCT":
+                count = 0
+                for mat in bpy.data.materials:
+                    if not mat.use_nodes: continue
+                    bsdf = next((n for n in mat.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'), None)
+                    if not bsdf: continue
+                    # Heal unlinked textures
+                    if not bsdf.inputs['Base Color'].is_linked:
+                        tex = next((n for n in mat.node_tree.nodes if n.type == 'TEX_IMAGE'), None)
+                        if tex:
+                            mat.node_tree.links.new(tex.outputs['Color'], bsdf.inputs['Base Color'])
+                            count += 1
+                return f"RECONSTRUCT_SUCCESS: {count} slots healed."
+            return f"Unknown Intent: {intent}"
         return f"Unhandled: {cmd}"
 
 def poll_airlock():
@@ -328,6 +438,8 @@ def main_loop():
 def register():
     bpy.utils.register_class(VIBE_OT_StartBridge); bpy.utils.register_class(VIBE_PT_Panel)
     if not bpy.app.timers.is_registered(main_loop): bpy.app.timers.register(main_loop)
+    threading.Thread(target=start_http_server, daemon=True).start()
+    vibe_log("VIBE_BRIDGE_KERNEL_READY: Port 22000 active.")
 
 def unregister():
     bpy.utils.unregister_class(VIBE_PT_Panel); bpy.utils.unregister_class(VIBE_OT_StartBridge)

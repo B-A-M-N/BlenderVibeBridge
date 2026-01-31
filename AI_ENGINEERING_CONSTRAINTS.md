@@ -73,6 +73,11 @@ This document defines the non-negotiable structural constraints for AI-generated
 *   **Consult Logs First**: If an operation fails (`status: ERROR` or `BLOCKED`), the AI MUST call `get_blender_errors()` and inspect `logs/vibe_audit.jsonl` BEFORE asking the user or retrying.
 *   **Hardware Awareness**: Respect `ResourceMonitor` blocks. If blocked by `RAM CRITICAL` or `VRAM LOW`, the AI must wait, suggest purging orphans (`purge_orphans`), or downscaling resolutions before proceeding.
 *   **Transaction Rollback**: If a transaction fails, `rollback_transaction` MUST be called to restore the last known good state.
+*   **Bridge Protocol Handshake**: All tool interactions MUST strictly adhere to [BRIDGE_PROTOCOL.md](./BRIDGE_PROTOCOL.md).
+*   **Failure Thresholds**: 
+    - Failure count > 50: Enter `READ_ONLY` mode.
+    - Failure count > 100: Enter `BLOCKED` mode.
+    - (Thresholds increased to prevent lockdown during iterative development).
 
 ## 17. Heartbeat & Progress Monitoring
 *   **Heavy Ops**: For long-running operations (Baking, IO, Physics), the AI MUST periodically call `check_heartbeat()` to track the `progress` field.

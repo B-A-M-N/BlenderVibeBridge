@@ -138,7 +138,7 @@ def blender_request(method, path, data=None, is_mutation=False):
         # 2. Poll Outbox
         os.makedirs(OUTBOX_PATH, exist_ok=True)
         outbox_file = os.path.join(OUTBOX_PATH, f"res_{cmd_id}.json")
-        timeout = 15
+        timeout = 60
         start_time = time.time()
         retries = 0
         
@@ -190,40 +190,40 @@ def blender_request(method, path, data=None, is_mutation=False):
 def validate_humanoid_rig(armature_name: str) -> str:
     """THE DOCTOR: Validates if a rig follows the standard Humanoid bone structure.
     Essential for ensuring animations work correctly in production environments."""
-    return str(blender_request("POST", "/command", data={"type": "unity_op", "action": "validate_humanoid", "target": armature_name}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "unity_op", "action": "validate_humanoid", "target": armature_name, "intent": "RIG"}, is_mutation=True))
 
 @mcp.tool()
 def optimize_avatar_mesh(obj_name: str, ratio: float = 0.5) -> str:
     """THE POLISHER: Reduces the polycount of a mesh by a specific ratio (0.0 to 1.0).
     Use this to create optimized versions of high-poly assets."""
-    return str(blender_request("POST", "/command", data={"type": "unity_op", "action": "optimize_avatar", "target": obj_name, "ratio": ratio}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "unity_op", "action": "optimize_avatar", "target": obj_name, "ratio": ratio, "intent": "OPTIMIZE"}, is_mutation=True))
 
 @mcp.tool()
 def generate_viseme_key(mesh_name: str, viseme: str) -> str:
     """THE VOX: Creates a viseme shape key slot (e.g., 'vrc.v_aa', 'vrc.v_ih') for lip-sync.
     Use this when preparing character meshes for VRChat."""
-    return str(blender_request("POST", "/command", data={"type": "viseme_op", "name": mesh_name, "viseme": viseme}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "viseme_op", "name": mesh_name, "viseme": viseme, "intent": "ANIMATE"}, is_mutation=True))
 
 @mcp.tool()
 def begin_transaction() -> str:
     """THE ARCHIVIST: Starts a multi-command transaction. 
     All subsequent mutations will be grouped into a single Undo step."""
-    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "begin_transaction"}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "begin_transaction", "intent": "GENERAL"}, is_mutation=True))
 
 @mcp.tool()
 def commit_transaction() -> str:
     """THE ARCHIVIST: Finalizes and saves the current multi-command transaction."""
-    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "commit_transaction"}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "commit_transaction", "intent": "GENERAL"}, is_mutation=True))
 
 @mcp.tool()
 def rollback_transaction() -> str:
     """THE ARCHIVIST: Aborts the current transaction and reverts all changes since 'begin_transaction'."""
-    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "rollback_transaction"}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "rollback_transaction", "intent": "GENERAL"}, is_mutation=True))
 
 @mcp.tool()
 def hot_reload_blender_bridge() -> str:
     """Triggers a self-reload within Blender to pick up latest code changes."""
-    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "reload"}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "reload", "intent": "GENERAL"}, is_mutation=True))
 
 @mcp.tool()
 def reconcile_state(assumptions: str) -> str:
@@ -254,7 +254,7 @@ def execute_strategic_intent(intent: str) -> str:
 @mcp.tool()
 def manage_modifier(name: str, action: str, modifier_name: str, modifier_type: str = None, properties: str = None) -> str:
     """Manages object modifiers (add, remove, set) with safety rails."""
-    payload = {"type": "modifier_op", "name": name, "action": action, "mod_name": modifier_name, "mod_type": modifier_type}
+    payload = {"type": "modifier_op", "name": name, "action": action, "mod_name": modifier_name, "mod_type": modifier_type, "intent": "OPTIMIZE"}
     if properties:
         try:
             props = json.loads(properties)
@@ -266,19 +266,19 @@ def manage_modifier(name: str, action: str, modifier_name: str, modifier_type: s
 @mcp.tool()
 def transform_object(name: str, operation: str, x: float, y: float, z: float) -> str:
     """Moves, rotates, or scales an object. operation: 'translate', 'rotate', 'scale'."""
-    return str(blender_request("POST", "/command", data={"type": "transform", "name": name, "op": operation, "value": str((x,y,z))}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "transform", "name": name, "op": operation, "value": str((x,y,z)), "intent": "SCENE_SETUP"}, is_mutation=True))
 
 @mcp.tool()
 def add_primitive(type: str) -> str:
     """Adds a new primitive (cube, sphere, monkey)."""
     m = {"cube": "mesh.primitive_cube_add", "sphere": "mesh.primitive_uv_sphere_add", "monkey": "mesh.primitive_monkey_add"}
     if type.lower() not in m: return "Unsupported type."
-    return str(blender_request("POST", "/command", data={"type": "run_op", "op": m[type.lower()]}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "run_op", "op": m[type.lower()], "intent": "SCENE_SETUP"}, is_mutation=True))
 
 @mcp.tool()
 def manage_nodes(name: str, action: str, node_type: str = None, target_type: str = "SHADER", link_data: str = None) -> str:
     """Manages Node Trees (add, link). link_data: JSON string of socket names."""
-    payload = {"type": "node_op", "action": action, "name": name, "target_type": target_type.upper(), "node_type": node_type}
+    payload = {"type": "node_op", "action": action, "name": name, "target_type": target_type.upper(), "node_type": node_type, "intent": "LIGHT"}
     if link_data:
         try: payload.update(json.loads(link_data))
         except: return "Error: Invalid JSON."
@@ -288,23 +288,23 @@ def manage_nodes(name: str, action: str, node_type: str = None, target_type: str
 def apply_physics(name: str, type: str) -> str:
     """THE SIMULATOR: Applies RIGID_BODY or CLOTH physics to an object.
     Use this to instantly make an object respond to gravity or behave like fabric."""
-    return str(blender_request("POST", "/command", data={"type": "physics_op", "name": name, "phys_type": type.upper()}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "physics_op", "name": name, "phys_type": type.upper(), "intent": "SCENE_SETUP"}, is_mutation=True))
 
 @mcp.tool()
 def material_preview_sandbox() -> str:
     """THE SHOWROOM: Spawns a temporary preview sphere to test material changes safely.
     Use this to see how a material looks without modifying your main meshes."""
-    return str(blender_request("POST", "/command", data={"type": "cleanup_op", "action": "material_preview_sandbox"}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "cleanup_op", "action": "material_preview_sandbox", "intent": "OPTIMIZE"}, is_mutation=True))
 
 @mcp.tool()
 def setup_lighting(name: str, type: str = "POINT", energy: float = 10.0, color: str = "(1, 1, 1)") -> str:
     """Configures a light source with safety energy caps."""
-    return str(blender_request("POST", "/command", data={"type": "lighting_op", "name": name, "type_light": type.upper(), "energy": energy, "color": color}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "lighting_op", "name": name, "type_light": type.upper(), "energy": energy, "color": color, "intent": "LIGHT"}, is_mutation=True))
 
 @mcp.tool()
 def manage_constraints(owner_name: str, action: str, type: str, target_name: str = None, constraint_name: str = None, properties: str = None) -> str:
     """Rigging tools: TRACK_TO, FOLLOW_PATH, COPY_LOCATION. properties: JSON string."""
-    payload = {"type": "constraint_op", "action": action, "name": owner_name, "target": target_name, "c_type": type.upper(), "c_name": constraint_name}
+    payload = {"type": "constraint_op", "action": action, "name": owner_name, "target": target_name, "c_type": type.upper(), "c_name": constraint_name, "intent": "RIG"}
     if properties:
         try: payload["props"] = json.loads(properties)
         except: return "Error: Invalid JSON."
@@ -313,12 +313,21 @@ def manage_constraints(owner_name: str, action: str, type: str, target_name: str
 @mcp.tool()
 def set_viewport_shading(mode: str = "SOLID") -> str:
     """Changes UI shading: WIREFRAME, SOLID, MATERIAL, RENDERED."""
-    return str(blender_request("POST", "/command", data={"type": "viewport_op", "mode": mode.upper()}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "viewport_op", "mode": mode.upper(), "intent": "LIGHT"}, is_mutation=True))
 
 @mcp.tool()
-def take_viewport_screenshot() -> str:
+def take_viewport_screenshot() -> ImageContent:
     """Captures an OpenGL screenshot for visual feedback."""
-    return str(blender_request("POST", "/command", data={"type": "render_op"}, is_mutation=True))
+    res = blender_request("POST", "/command", data={"type": "render_op", "intent": "GENERAL"}, is_mutation=True)
+    if isinstance(res, dict) and "result" in res:
+        path = res["result"]
+        if os.path.exists(path):
+            with open(path, "rb") as f:
+                data = f.read()
+                # Determine mime type based on extension
+                mime = "image/png" if path.endswith(".png") else "image/jpeg"
+                return ImageContent(data=data, mime_type=mime)
+    return ImageContent(data=b"", mime_type="image/png")
 
 @mcp.tool()
 def scan_external_asset(path: str) -> str:
@@ -334,7 +343,7 @@ def link_external_library(filepath: str, name: str, directory: str = "Object") -
     violations = SecurityGate.check_asset(filepath)
     if violations:
         return f"❌ LINK BLOCKED: {violations[0]}"
-    return str(blender_request("POST", "/command", data={"type": "link_op", "filepath": filepath, "name": name, "directory": directory}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "link_op", "filepath": filepath, "name": name, "directory": directory, "intent": "SCENE_SETUP"}, is_mutation=True))
 
 @mcp.tool()
 def secure_write_file(path: str, content: str) -> str:
@@ -370,73 +379,73 @@ def protect_object(name: str, protected: bool = True) -> str:
     locked objects cannot be deleted by the AI until unprotected.
     Set protected=False to unlock."""
     script = f"bpy.data.objects['{name}']['vibe_protected'] = {1 if protected else 0}"
-    return str(blender_request("POST", "/command", data={"type": "exec_script", "script": script, "description": f"PROTECT:{name}"}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "exec_script", "script": script, "description": f"PROTECT:{name}", "intent": "SCENE_SETUP"}, is_mutation=True))
 
 @mcp.tool()
 def undo_last_operation() -> str:
     """Performs a global Blender Undo (Ctrl+Z equivalent). Use this to revert a mistake."""
-    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "undo"}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "undo", "intent": "GENERAL"}, is_mutation=True))
 
 @mcp.tool()
 def create_safety_checkpoint(name: str) -> str:
     """Saves a timestamped copy of the current .blend file to the 'checkpoints/' folder.
     Use BEFORE performing risky structural changes."""
-    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "checkpoint", "name": name}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "checkpoint", "name": name, "intent": "GENERAL"}, is_mutation=True))
 
 @mcp.tool()
 def manage_collection(name: str, action: str = "add", obj_name: str = None) -> str:
     """THE ORGANIZER: Creates collections or links objects to them. action: 'add' or 'link'."""
-    return str(blender_request("POST", "/command", data={"type": "collection_op", "name": name, "action": action, "obj_name": obj_name}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "collection_op", "name": name, "action": action, "obj_name": obj_name, "intent": "SCENE_SETUP"}, is_mutation=True))
 
 @mcp.tool()
 def manage_material(name: str, obj_name: str = None) -> str:
     """THE SURFACER: Creates a new material and optionally assigns it to an object."""
-    return str(blender_request("POST", "/command", data={"type": "material_op", "name": name, "obj_name": obj_name}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "material_op", "name": name, "obj_name": obj_name, "intent": "SCENE_SETUP"}, is_mutation=True))
 
 @mcp.tool()
 def trigger_bake(resolution: int = 1024) -> str:
     """THE OVEN: Triggers a texture bake with a 2048px hardware safety cap."""
-    return str(blender_request("POST", "/command", data={"type": "bake_op", "resolution": resolution}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "bake_op", "resolution": resolution, "intent": "OPTIMIZE"}, is_mutation=True))
 
 @mcp.tool()
 def set_animation_keyframe(name: str, prop: str = "location", frame: int = 1) -> str:
     """THE ANIMATOR: Inserts a keyframe for a property at a specific frame."""
-    return str(blender_request("POST", "/command", data={"type": "animation_op", "name": name, "prop": prop, "frame": frame}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "animation_op", "name": name, "prop": prop, "frame": frame, "intent": "ANIMATE"}, is_mutation=True))
 
 @mcp.tool()
 def manage_camera(name: str, active: bool = True) -> str:
     """THE CINEMATOGRAPHER: Spawns a camera and optionally makes it the active view."""
-    return str(blender_request("POST", "/command", data={"type": "camera_op", "name": name, "active": active}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "camera_op", "name": name, "active": active, "intent": "SCENE_SETUP"}, is_mutation=True))
 
 @mcp.tool()
 def set_world_background(color: str = "(0.05, 0.05, 0.05, 1)") -> str:
     """THE STAGEHAND: Sets the global environment background color."""
-    return str(blender_request("POST", "/command", data={"type": "world_op", "color": color}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "world_op", "color": color, "intent": "LIGHT"}, is_mutation=True))
 
 @mcp.tool()
 def create_procedural_curve(name: str, coords: str = "[(0,0,0), (1,1,1)]") -> str:
     """THE PATHFINDER: Creates a 3D Poly Curve from a list of (x,y,z) coordinate tuples."""
-    return str(blender_request("POST", "/command", data={"type": "curve_op", "name": name, "coords": coords}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "curve_op", "name": name, "coords": coords, "intent": "SCENE_SETUP"}, is_mutation=True))
 
 @mcp.tool()
 def manage_object_locks(name: str, lock: bool = True) -> str:
     """THE JAILER: Locks or unlocks all transform axes (Loc/Rot/Scale) for an object."""
-    return str(blender_request("POST", "/command", data={"type": "lock_op", "name": name, "lock": lock}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "lock_op", "name": name, "lock": lock, "intent": "SCENE_SETUP"}, is_mutation=True))
 
 @mcp.tool()
 def process_mesh(action: str) -> str:
     """THE BLACKSMITH: shade_smooth, shade_flat, or join selected objects."""
-    return str(blender_request("POST", "/command", data={"type": "mesh_op", "action": action}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "mesh_op", "action": action, "intent": "OPTIMIZE"}, is_mutation=True))
 
 @mcp.tool()
 def manage_vertex_groups(name: str, vg_name: str) -> str:
     """THE WEIGHTER: Creates a new vertex group on a mesh object."""
-    return str(blender_request("POST", "/command", data={"type": "vg_op", "name": name, "vg_name": vg_name}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "vg_op", "name": name, "vg_name": vg_name, "intent": "RIG"}, is_mutation=True))
 
 @mcp.tool()
 def setup_spatial_audio(name: str) -> str:
     """THE COMPOSER: Spawns a 3D Speaker object for spatialized sound."""
-    return str(blender_request("POST", "/command", data={"type": "audio_op", "name": name}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "audio_op", "name": name, "intent": "SCENE_SETUP"}, is_mutation=True))
 
 @mcp.tool()
 def import_export_asset(action: str, filepath: str) -> str:
@@ -445,24 +454,24 @@ def import_export_asset(action: str, filepath: str) -> str:
         violations = SecurityGate.check_asset(filepath)
         if violations:
             return f"❌ IMPORT BLOCKED: {violations[0]}"
-    return str(blender_request("POST", "/command", data={"type": "io_op", "action": action, "filepath": filepath}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "io_op", "action": action, "filepath": filepath, "intent": "SCENE_SETUP"}, is_mutation=True))
 
 @mcp.tool()
 def create_3d_annotation(text: str) -> str:
     """THE SCRIBBLE: Creates a Grease Pencil object for 3D notes and markup."""
-    return str(blender_request("POST", "/command", data={"type": "annotation_op", "text": text}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "annotation_op", "text": text, "intent": "SCENE_SETUP"}, is_mutation=True))
 
 @mcp.tool()
 def save_as_new_copy(filename: str) -> str:
     """Saves the current blend file as a new copy with the specified filename.
     Useful for versioning (e.g., 'avatar_v3.blend')."""
-    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "save_copy", "name": filename}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "system_op", "action": "save_copy", "name": filename, "intent": "GENERAL"}, is_mutation=True))
 
 @mcp.tool()
 def reset_material_standard(material_name: str) -> str:
     """THE JANITOR: Wipes a material and resets it to a standard, clean Principled BSDF (Gray).
     Use this to fix broken shaders, pink textures, or corruption."""
-    return str(blender_request("POST", "/command", data={"type": "cleanup_op", "action": "reset_material", "target": material_name}, is_mutation=True))
+    return str(blender_request("POST", "/command", data={"type": "cleanup_op", "action": "reset_material", "target": material_name, "intent": "OPTIMIZE"}, is_mutation=True))
 
 @mcp.tool()
 def scan_for_nan_inf() -> str:
