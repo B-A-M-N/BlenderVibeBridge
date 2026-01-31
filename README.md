@@ -100,6 +100,35 @@ If you are evaluating this project as an engineer or hiring manager, this reposi
 *   **`create_3d_annotation`**: 3D markup for AI-to-Human communication.
 *   **`secure_write_file`**: AST-validated Python/C# file writing.
 
+## 📚 Documentation & Governance
+
+To maintain a secure and deterministic environment, this project follows strict operational doctrines. Please refer to the following documentation for setup, security, and philosophical guidance:
+
+### 🐣 For Beginners
+*   **[The Complete Beginner's Manual](HUMAN_ONLY/FOR_BEGINNERS.md)**: A step-by-step guide to setting up Blender, Python, and the AI bridge.
+
+### 🛠️ For Engineers & Power Users
+*   **[Technical Installation Guide](HUMAN_ONLY/INSTALL.md)**: Deep dive into architecture, AST auditing, and main-thread dispatching.
+*   **[Technical Architecture](HUMAN_ONLY/TECHNICAL_ARCHITECTURE.md)**: Details on the split-thread consumer model and context overrides.
+*   **[AI Engineering Constraints](AI_ENGINEERING_CONSTRAINTS.md)**: The "AI Constitution" — non-negotiable safety and structural rules.
+*   **[ISA Specification](ISA_SPEC.md)**: The Instruction Set Architecture (Opcodes and Intent Binding).
+*   **[Blender Kernel Tool Inventory](MCP_BLENDER_KERNEL.md)**: Exhaustive list of all low-level tools and capabilities.
+
+### 🛡️ Security & Failure Protocols
+*   **[Security Policy](HUMAN_ONLY/SECURITY.md)**: Vulnerability reporting and baseline security mandates.
+*   **[Security & Architecture Deep Dive](HUMAN_ONLY/SECURITY_DOCS.md)**: The "Iron Box" safety model explained.
+*   **[Failure Modes & Recovery](HUMAN_ONLY/FAILURE_MODES.md)**: Taxonomy of terminal vs. recoverable failures.
+*   **[Failure Post-Mortem Guide](HUMAN_ONLY/FAILURE_POSTMORTEM.md)**: Forensic analysis procedures for scene corruption or hangs.
+
+### 📜 Doctrine & Legal
+*   **[Non-Goals & Doctrine](NON_GOALS.md)**: Intentional limitations to prevent "AI Psychosis."
+*   **[AI Context & Philosophy](AI_CONTEXT.md)**: Philosophical guide to adversarial prompting and the "Overconfidence Trap."
+*   **[Full Feature Manifest](HUMAN_ONLY/FEATURES.md)**: The authoritative list of all functional abilities.
+*   **[Contributing Guide](HUMAN_ONLY/CONTRIBUTING.md)**: Standards for code quality and the "Zero Trust" philosophy.
+*   **[Privacy Policy](HUMAN_ONLY/PRIVACY.md)**: Local-first, zero-telemetry commitment.
+
+---
+
 ## 🛡️ Iron Box Security
 The bridge is hardened via three distinct layers:
 1.  **AST Auditing**: All incoming Python code is parsed and scanned for forbidden calls (e.g., `os.system`, `subprocess`).
@@ -211,3 +240,4 @@ By submitting a contribution (pull request, code snippet, bug fix, or documentat
 
 
 **Created by the Vibe Bridge Team.**
+

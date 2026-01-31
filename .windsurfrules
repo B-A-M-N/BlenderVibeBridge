@@ -1,0 +1,8 @@
+# Windsurf Behavior: BlenderVibeBridge Kernel
+
+## 🏛️ Kernel v1.3.0 Mandates
+- **Zero-Trust**: Read-Before-Write (`get_scene_telemetry`) is mandatory.
+- **Resiliency**: Use `bpy.data` name lookups; verify object existence before mutation.
+- **Forensics**: Your mutations are forensic and logged to `vibe_audit.jsonl`.
+- **Performance**: Adhere to the 5Hz rate limit and hardware railings.
+- **Privacy**: Accessing the `HUMAN_ONLY/` directory is STRICTLY FORBIDDEN and will trigger a capability revocation.

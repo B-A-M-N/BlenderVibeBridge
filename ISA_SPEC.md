@@ -22,5 +22,22 @@ This document defines the strictly mapped numbered opcodes for the BlenderVibeBr
 | **0x10** | `audit_op` | `READ` | Forensics and scene integrity scans. |
 | **0x11** | `macro_op` | `PIPELINE` | Compiled high-level artistic recipes. |
 
----
-**Protocol Note**: The ModelingKernel accepts both string keys and their hex/int opcode equivalents for backward compatibility during the v1.x transition.
+## 🧠 Governance Extensions (v1.3)
+
+All Bridge instructions now require **Intent Binding** and support **Speculative Execution**.
+
+### 🏷️ Mandatory Intent Fields
+Every command MUST include an `intent` string. Commands violating their intent envelope are rejected by the kernel.
+
+| Intent | Primary Purpose | Allowed Opcodes |
+| :--- | :--- | :--- |
+| `OPTIMIZE` | Mesh/Scene optimization | 0x04, 0x0B, 0x10, 0x11 |
+| `RIG` | Armature/Constraint work | 0x07, 0x0D, 0x10 |
+| `LIGHT` | Shading and lighting | 0x05, 0x06, 0x09 |
+| `SCENE_SETUP` | Project organization | 0x01, 0x0B, 0x0C |
+
+### 🧪 Speculative Execution
+Append `"dry_run": true` to any mutation to perform a validation pass without committing changes to the scene.
+
+### 🚦 Temporal Governors
+The kernel enforces a hard **5Hz** command ceiling. Bursting above this frequency will trigger a `RATE_LIMIT` rejection. Repeated validation failures will result in **Capability Revocation** (READ_ONLY or BLOCKED status).
