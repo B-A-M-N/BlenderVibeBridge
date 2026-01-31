@@ -39,20 +39,23 @@ BLENDER_API_URL = "http://127.0.0.1:22000"
 VIBE_TOKEN = "VIBE_777_SECURE"
 SESSION_ID = None
 AUDIT_LOG_PATH = "/home/bamn/BlenderVibeBridge/logs/vibe_audit.jsonl"
+ENTROPY_BUDGET = 100
+ENTROPY_USED = 0
 
 # Ensure logs directory exists
 os.makedirs(os.path.dirname(AUDIT_LOG_PATH), exist_ok=True)
 
 class AuditLogger:
+...
     @staticmethod
     def log_mutation(method, path, data, response):
+        global ENTROPY_USED
+        ENTROPY_USED += 1
         entry = {
             "timestamp": datetime.datetime.now().isoformat(),
-            "method": method,
-            "path": path,
-            "request_data": data,
-            "response": response,
-            "capability": data.get("capability", "UNKNOWN") if data else "UNKNOWN"
+...
+            "capability": data.get("capability", "UNKNOWN") if data else "UNKNOWN",
+            "entropy_used": ENTROPY_USED
         }
         with open(AUDIT_LOG_PATH, "a") as f:
             f.write(json.dumps(entry) + "\n")
@@ -583,6 +586,19 @@ def get_vibe_audit_log(lines: int = 20) -> str:
     return "Audit log missing."
 
 @mcp.tool()
+def get_current_beliefs() -> str:
+    """THE PHILOSOPHER: Returns the system's current derived beliefs and confidence scores.
+    Enforces Epistemic Integrity by showing provenance and expiry for all conclusions."""
+    path = "/home/bamn/BlenderVibeBridge/metadata/vibe_beliefs.jsonl"
+    if os.path.exists(path):
+        try:
+            with open(path, "r") as f:
+                return f.read()
+        except Exception as e:
+            return f"Error reading belief ledger: {str(e)}"
+    return "Belief Ledger missing."
+
+@mcp.tool()
 def get_blender_errors() -> str:
     """Retrieves the last 20 lines from the bridge.log file for low-level debugging."""
     path = "/home/bamn/BlenderVibeBridge/bridge.log"
@@ -594,6 +610,41 @@ def get_blender_errors() -> str:
         except Exception as e:
             return f"Error reading log: {str(e)}"
     return "Log file missing."
+
+@mcp.tool()
+def get_blender_invariants(category: str = "scene") -> str:
+    """THE SENSOR: Returns deterministic engine facts from Blender.
+    Categories: 'heartbeat', 'file', 'scene', 'context', 'datablock', 'error', 'entropy'.
+    Use this to verify state before and after any mutation."""
+    if category.lower() == "entropy":
+        return json.dumps({
+            "entropy_budget": ENTROPY_BUDGET,
+            "entropy_used": ENTROPY_USED,
+            "remaining": ENTROPY_BUDGET - ENTROPY_USED
+        })
+    
+    endpoints = {
+...
+        "heartbeat": "/blender/heartbeat",
+        "file": "/blender/file_state",
+        "scene": "/blender/scene_state",
+        "context": "/blender/context_state",
+        "datablock": "/blender/datablock_state",
+        "error": "/blender/error_state"
+    }
+    path = endpoints.get(category.lower(), "/blender/scene_state")
+    return str(blender_request("GET", path))
+
+@mcp.tool()
+def get_state_hash() -> str:
+    """THE CALCULATOR: Returns a deterministic SHA256 hash of the current scene state."""
+    res = blender_request("GET", "/blender/scene_state")
+    if isinstance(res, dict) and "scene_hash" in res:
+        return res["scene_hash"]
+    return "UNKNOWN"
+
+@mcp.tool()
+def get_wal_tail(lines: int = 20) -> str:
 
 @mcp.tool()
 def force_restart_blender_bridge() -> str:

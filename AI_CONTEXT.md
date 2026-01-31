@@ -12,40 +12,36 @@ Large Language Models (LLMs) are **Probability Engines**. They don't "see" your 
 
 ---
 
-## 🏛️ Epistemic Governance (v1.3.0)
+## 🏛️ The Three Orders of Invariance (The Vibe Philosophy)
 
-**VibeBridge** is no longer just a sandbox; it is a **Governed Kernel**. It acts as a judge, historian, and probation officer for every AI interaction.
 
-### The 8 Pillars of Governance
-1.  **Intent Binding**: Every command is bound to a declared intent (e.g., `OPTIMIZE`). The kernel rejects commands that drift outside their purpose.
-2.  **Deterministic Forensics**: The kernel records a scene hash `pre` and `post` mutation. Every move is immutable and audit-ready.
-3.  **State Drift Detection**: Periodically verifies that Blender's internal state still matches the kernel's mental model.
-4.  **Temporal Governors**: Implements a mutation budget (decrements on success, replenishes over time) and a hard 5Hz rate limit.
-5.  **Capability Revocation**: Automatically downgrades a session to `READ_ONLY` or `BLOCKED` if the AI triggers repeated validation failures.
-6.  **Speculative Execution**: Supports "Dry-Runs" that simulate mutations in a temporary undo-block to report topology deltas before a permanent commit.
-7.  **Supply-Chain Integrity**: Hashes the Blender version, addons, and Python environment at bootstrap to detect "Floor Drift."
-8.  **Semantic Sanitization**: Deep-inspects numeric data to block "Geometrically Insane" inputs (NaNs, Inf, insane magnitudes) before they can rot the scene.
 
----
+VibeBridge is not a creative tool; it is a **Distributed Proof System** designed to maintain absolute determinism across long-duration AI orchestration. It operates on three distinct layers of enforcement:
 
-### Core Architecture (v1.3.0)
 
-```mermaid
-graph LR
-    A[AI Technical Director] <-->|Authenticated Intent Plane| B[MCP Server]
-    B <-->|Governed Airlock: JSON| C[Governed Kernel]
-    C -->|Forensic Hash Plane| D[vibe_audit.jsonl]
-    C -->|Main-Thread Dispatch| E[bpy API]
-```
+
+1.  **First Order: State Truth (Reality Anchoring)**: Prevents hallucinations and ghost state via hard hashes, handshakes, and monotonic heartbeats.
+
+2.  **Second Order: Causal Correctness (Behavioral Sanity)**: Prevents thrashing and infinite retry loops via idempotency keys, entropy budgets, and proof-of-work commits.
+
+3.  **Third Order: Epistemic Integrity (Belief Governance)**: Prevents systemic self-deception and long-horizon drift via belief provenance, confidence decay, and amnesia mandates.
+
+
 
 ---
+
+
 
 ## 🛡️ Non-Negotiable Constraints (The AI Constitution)
+
 *   **Zero Trust**: Assume all external assets are malicious. Verify everything.
+
 *   **Read-Before-Write**: Always `Inspect → Validate → Mutate → Verify`.
-*   **Procedural Discipline**: All operations MUST follow the [BLENDER_PROCEDURAL_WORKFLOW.md](./BLENDER_PROCEDURAL_WORKFLOW.md), [BLENDER_PROCEDURAL_FLOW.md](./BLENDER_PROCEDURAL_FLOW.md), and [LIFECYCLE_DISCIPLINE.md](./LIFECYCLE_DISCIPLINE.md) for identity and state management.
-*   **Confidence is not Evidence**: Trust the telemetry (hashes, vertex counts), not the AI's verbal assurance.
-*   **Atomic Transactions**: Wrap all multi-step mutations in `begin_transaction` and `commit_transaction`.
-*   **Workspace Hygiene**: Store ALL temporary/diagnostic files in `avatar_scripts/`. NEVER pollute the root.
+
+*   **Procedural Discipline**: All operations MUST follow the [BLENDER_PROCEDURAL_WORKFLOW.md](./BLENDER_PROCEDURAL_WORKFLOW.md), [BLENDER_PROCEDURAL_FLOW.md](./BLENDER_PROCEDURAL_FLOW.md), and [LIFECYCLE_DISCIPLINE.md](./LIFECYCLE_DISCIPLINE.md).
+
+*   **The Technical Ceiling**: The AI is forbidden to "fix" invariance violations. Recovery is restricted to the machine kernel; the AI's role is strictly limited to explanation, summary, and escalation.
+
+
 
 **BlenderVibeBridge** transforms Blender into a high-integrity, governed environment where intelligence is regulated and every action is forensic.

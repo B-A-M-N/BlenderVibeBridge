@@ -280,6 +280,35 @@
 | **Undo** | History Spikes | Mass batch edits | History Hang | Disable `use_global_undo` for batches. |
 | **Memory** | Data Spikes | Large temp buffers | Hard Crash | Delete temp blocks; Use generators. |
 
+## 25. BLENDER-SPECIFIC TRIPLE-LOCK RULES
+...
+3. **Rationale Gate (Semantic)**: The AI MUST reason through why a context error occurred before the bridge accepts a follow-up correction script.
+
+---
+
+## 26. DISTRIBUTED PROOF MECHANICS (Second-Order Implementation)
+
+1. **Monotonic Tick**: The Blender heartbeat MUST include a `monotonic_tick` (integer) that increments on every snapshot.
+2. **Entropy Tracking**: The Bridge Server MUST maintain an `entropy_used` counter.
+    * `+1` for every successful mutation.
+    * `+5` for every session-interrupting crash or rollback.
+3. **Idempotency Keys**: Mutating tools MUST accept an `idempotency_key` from the orchestrator.
+4. **Stale Intent Detection**: The server MUST reject a `commit_transaction` if the current `scene_hash` != the hash used during the `begin_transaction` phase.
+
+---
+
+## 27. BELIEF MANAGEMENT & PROVENANCE (Third-Order Implementation)
+
+1. **The Belief Ledger**: The Bridge Server MUST maintain `metadata/vibe_beliefs.jsonl` to track derived conclusions.
+    * Structure: `conclusion`, `provenance_hashes`, `confidence_score`, `expiry_tick`.
+2. **Epistemic Garbage Collection**:
+    * Any belief with `confidence < 0.2` is automatically purged.
+    * On every `1000` monotonic ticks, the kernel must run a "Reasoning Audit" to expire stale lessons.
+3. **Observer Verification Rule**: 
+    * A fact is marked `CONFIRMED` only if reported by Blender AND verified by the Bridge WAL.
+    * Single-witness facts are marked `UNCONFIRMED`.
+4. **Counterfactual Trigger**: For every stable fix, the system must store a "Falsification Trigger" (e.g., "If vertex count changes, invalidate fix_rig belief").
+
 ---
 
 ## REQUIRED LOG STRUCTURE (MINIMUM)

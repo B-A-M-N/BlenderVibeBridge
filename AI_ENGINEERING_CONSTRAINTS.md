@@ -99,14 +99,21 @@ This document defines the non-negotiable structural constraints for AI-generated
 *   **Data Persistence**: Use the "Fake User" shield (`use_fake_user = True`) for all unlinked datablocks to prevent accidental deletion.
 *   **Zero Trust IO**: All file IO and asset imports must be treated as untrusted and validated against race conditions.
 
-## 21. Blender Freeze Prevention (AI Operational Mandates)
-*   **Knowledge Base Consultation**: The AI MUST consult the "Blender Freeze Knowledge Base" in [LIFECYCLE_DISCIPLINE.md](./LIFECYCLE_DISCIPLINE.md) before high-impact operations.
-*   **No Blocking Loops**: Never execute infinite or tight loops in the main thread. Use modal timers or yield execution.
-*   **Async-Only I/O**: All network and external process calls MUST use non-blocking patterns with explicit timeouts.
-*   **Undo Management**: Disable global undo (`use_global_undo = False`) before executing batch operations (>100 objects or >50k vertices) to prevent history spikes.
-*   **Thread Safety**: NEVER attempt to mutate `bpy.data` from a background thread. All mutations must be marshaled to the main thread.
-*   **Memory Hygiene**: Explicitly delete temporary data-blocks and large lists/buffers after use to prevent RAM fragmentation.
-*   **Viewport Awareness**: For high-complexity tasks, automatically switch the viewport to `Bounding Box` or enable `Simplify` before proceeding.
+## 22. TRIPLE-LOCK INVARIANCE MANDATE
+*   **Layer 1 (Syntactic)**: All `bpy` API calls MUST be wrapped in `vibe_bridge.execute_blender_command()`.
+*   **Layer 2 (Structural)**: `vibe_bridge.execute_blender_command()` MUST validate the command against a whitelist of approved operations.
+*   **Layer 3 (Semantic)**: `commit_transaction` requires a technical rationale matching the current state hash (Proof of Work).
+
+## 23. THE DISTRIBUTED PROOF AXIOMS (Second-Order Invariants)
+...
+*   **Silence is Error**: Lack of an expected signal/heartbeat is a terminal error, not a successful "quiet" state.
+
+## 24. EPISTEMIC INTEGRITY (Third-Order Invariants)
+*   **Belief Provenance**: The AI is FORBIDDEN to form stable beliefs without referencing specific WAL indices or state hashes.
+*   **Confidence Half-Life**: Any automated "Known Good" classification expires after 12 operations unless re-validated.
+*   **Narrative Isolation**: AI "Explanations" are strictly for human review. They MUST NOT be used as inputs for subsequent automated decision loops.
+*   **Drift Budgeting**: Protocol deviations (edge cases) are a consumable resource. Exhaustion (2 deviations) requires manual human reset.
+*   **Amnesia Mandate**: "Lessons Learned" regarding specific asset failures must carry an expiry (default 30 days) to prevent memory poisoning.
 
 ## The Meta-Rule
-If a proposed solution is unusually short, clever, or bypasses a limitation, assume it is wrong. Prioritize safety and explicit verification over brevity.
+The AI is not allowed to "fix" invariance violations. Only the machine kernel may perform recovery. The AI's role is to explain, summarize, and escalate.
