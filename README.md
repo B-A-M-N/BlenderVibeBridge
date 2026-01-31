@@ -4,13 +4,6 @@
 > **EXPERIMENTAL & IN-DEVELOPMENT**  
 > This project is currently an active research prototype. APIs, security protocols, and core logic are subject to rapid, breaking changes. This software performs mutations on 3D scenes; **MANDATORY BACKUPS** are required before use.
 
----
-
-🔰 **Not Technical? Start Here!**  
-If you’re new to AI-assisted Blender workflows, don’t worry. We’ve created a **[Complete Beginner's Manual](HUMAN_ONLY/FOR_BEGINNERS.md)** that explains everything step by step, from setup to safe usage.
-
----
-
 ### The "One-Click" Technical Director for 3D Creation & Mastery
 *A production-grade AI control interface for deterministic, undo-safe Blender operations.*
 
@@ -36,6 +29,13 @@ It is a professional-grade intelligent interface that transforms Blender into a 
 3.  **Connect AI**: Point your MCP-compatible AI tool (Goose, Claude Desktop) to `mcp-server/server.py`.
 4.  **Run Server**: Execute `./start_bridge.sh`.
 5.  **Prompt**: Ask your AI to "Check my Blender scene" to verify the handshake.
+
+---
+
+🔰 **Not Technical? Start Here!**  
+If you’re new to AI-assisted Blender workflows, don’t worry. We’ve created a **[Complete Beginner's Manual](HUMAN_ONLY/FOR_BEGINNERS.md)** that explains everything step by step, from setup to safe usage.
+
+---
 
 ---
 
