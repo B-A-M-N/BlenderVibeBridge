@@ -97,6 +97,7 @@ This document defines the non-negotiable structural constraints for AI-generated
 *   **Dependency Pinning**: Scripts must declare dependencies; the bridge must block execution on environment mismatch.
 *   **Resource Integrity**: Enforce topology budgets (polygons caps) and cumulative modifier guards to prevent VRAM overflows.
 *   **Data Persistence**: Use the "Fake User" shield (`use_fake_user = True`) for all unlinked datablocks to prevent accidental deletion.
+*   **Binary Integrity (LFS)**: Large binary assets (.blend, .fbx, .png, etc.) MUST be tracked via Git LFS. Committing raw binaries >1MB is a protocol violation.
 *   **Zero Trust IO**: All file IO and asset imports must be treated as untrusted and validated against race conditions.
 
 ## 22. TRIPLE-LOCK INVARIANCE MANDATE
@@ -117,6 +118,10 @@ This document defines the non-negotiable structural constraints for AI-generated
 *   **Force-Fed Hashes**: AI must acknowledge the force-fed `scene_hash` in every turn.
 *   **Action Proof-of-Work**: `commit_transaction` requires a `technical_rationale_check` matching the current engine generation.
 *   **Dual-Witness Consensus**: Facts without dual-source verification (Blender + Bridge) are treated as hallucinations.
+
+## 26. ADVERSARIAL PRE-FLIGHT MANDATE
+*   **Bootstrap Verification**: The AI MUST call `run_adversarial_preflight` at the start of every session to detect zombie processes and port conflicts.
+*   **Self-Healing**: If the pre-flight report shows `safe_to_proceed: false`, the AI MUST prioritize system stabilization (cleaning ports/killing zombies) before any scene mutations.
 
 ## The Meta-Rule
 The AI is not allowed to "fix" invariance violations. Only the machine kernel may perform recovery. The AI's role is to explain, summarize, and escalate.

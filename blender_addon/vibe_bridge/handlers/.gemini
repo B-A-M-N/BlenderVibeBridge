@@ -3,6 +3,7 @@
 This layer manages event-driven callbacks (Scene Load, Undo, Frame Change).
 
 **RULES:**
+- **Adversarial Pre-flight**: You MUST call `run_adversarial_preflight` as your first action in any new session to verify bridge stability.
 - Handlers may be registered multiple times by Blender; always guard against duplicates.
 - All handlers MUST be removed in the `unregister()` phase.
 - Scene changes and reloads trigger unexpected callbacks; maintain state re-indexing.

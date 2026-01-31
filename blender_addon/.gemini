@@ -3,6 +3,7 @@
 Blender operates under a modal, event-driven system. It is a controlled runtime, not an ad-hoc scripting environment.
 
 **RULES:**
+- **Adversarial Pre-flight**: You MUST call `run_adversarial_preflight` as your first action in any new session to verify bridge stability.
 - Do NOT assume linear execution.
 - Blocking calls CAN and WILL freeze the UI.
 - Context (`bpy.context`) is volatile and state-dependent.

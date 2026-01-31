@@ -615,6 +615,63 @@ def get_vibe_audit_log(lines: int = 20) -> str:
             return f"Error reading audit log: {str(e)}"
     return "Audit log missing."
 
+import psutil
+
+# ... (inside existing imports) ...
+
+@mcp.tool()
+def run_adversarial_preflight() -> str:
+    """THE WARDEN: Performs a deep system audit to detect and resolve zombie processes, 
+    port conflicts, and kernel instabilities. Run this BEFORE any major session or 
+    if the bridge feels 'stuck'."""
+    issues = []
+    
+    # 1. Zombie Blender Check
+    zombies = []
+    for proc in psutil.process_iter(['pid', 'name']):
+        if proc.info['name'] and "blender" in proc.info['name'].lower():
+            try:
+                if proc.status() in (psutil.STATUS_ZOMBIE, psutil.STATUS_STOPPED):
+                    zombies.append(proc.info['pid'])
+            except: continue
+    
+    if zombies:
+        issues.append(f"Zombie Blender PIDs detected: {zombies}. Killing...")
+        for pid in zombies:
+            try: psutil.Process(pid).kill()
+            except: pass
+
+    # 2. Port 22000 Cleanup
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        if s.connect_ex(("127.0.0.1", 22000)) == 0:
+            # Check if heartbeat is stale
+            health_res = check_heartbeat()
+            if "Error" in health_res or "missing" in health_res:
+                issues.append("Port 22000 is occupied but heartbeat is stale. Releasing port...")
+                for proc in psutil.process_iter(['pid', 'connections']):
+                    try:
+                        for conn in proc.info.get('connections', []):
+                            if conn.laddr.port == 22000:
+                                psutil.Process(proc.info['pid']).kill()
+                    except: continue
+
+    # 3. Airlock Verification
+    if not os.path.exists(INBOX_PATH):
+        issues.append("Airlock Inbox missing. Creating...")
+        os.makedirs(INBOX_PATH, exist_ok=True)
+
+    # 4. Critical Error Scan
+    log_errs = get_blender_errors()
+    if "ERROR" in log_errs or "CRITICAL" in log_errs:
+        issues.append("Recent critical errors detected in bridge.log. Inspecting logs recommended.")
+
+    report = {
+        "safe_to_proceed": len(issues) == 0,
+        "issues": issues,
+        "recommendation": "System healthy. Proceed with orchestration." if len(issues) == 0 else "System cleaned. Restart recommended if issues persist."
+    }
+    return json.dumps(report, indent=2)
+
 @mcp.tool()
 def get_current_beliefs() -> str:
     """THE PHILOSOPHER: Returns the system's current derived beliefs and confidence scores.

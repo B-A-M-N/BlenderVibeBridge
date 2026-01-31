@@ -3,6 +3,7 @@
 This directory contains the VibeBridge addon. It functions as a networked client in a synchronized system.
 
 **RULES:**
+- **Adversarial Pre-flight**: You MUST call `run_adversarial_preflight` as your first action in any new session to verify bridge stability.
 - `register()` and `unregister()` MUST be perfectly symmetric.
 - Persistent handlers MUST be explicitly removable to prevent leaks.
 - Do NOT refactor networking or IPC logic without specific instructions.

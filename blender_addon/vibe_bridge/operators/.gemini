@@ -3,6 +3,7 @@
 This layer contains the `bpy.types.Operator` implementations for the bridge.
 
 **RULES:**
+- **Adversarial Pre-flight**: You MUST call `run_adversarial_preflight` as your first action in any new session to verify bridge stability.
 - Operators are highly context-dependent. Do NOT assume an active object or area.
 - Prefer direct data API (`bpy.data`) over operators (`bpy.ops`) wherever possible for stability.
 - Operator failures must be caught and logged; they MUST NOT crash the bridge addon.

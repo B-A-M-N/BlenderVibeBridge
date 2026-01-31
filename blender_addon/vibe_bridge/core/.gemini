@@ -3,6 +3,7 @@
 This directory contains the event loop, timers, and high-level IPC handlers.
 
 **ABSOLUTE RULES:**
+- **Adversarial Pre-flight**: You MUST call `run_adversarial_preflight` as your first action in any new session to verify bridge stability.
 - Do NOT alter execution order or the timer cadence.
 - Do NOT replace `bpy.app.timers` with busy loops or `time.sleep()`.
 - Do NOT block the main thread; any operation >100ms MUST be modal or async.

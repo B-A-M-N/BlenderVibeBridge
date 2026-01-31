@@ -322,6 +322,17 @@
 
 ---
 
+## 29. BINARY ASSET INTEGRITY (GIT LFS)
+
+**Goal:** Ensure large 3D assets and binary media do not bloat the repository and are handled deterministically.
+
+1.  **Mandatory LFS Tracking**: All files matching patterns defined in `.gitattributes` (e.g., `.blend`, `.unity`, `.fbx`, `.png`) MUST be committed via Git LFS.
+2.  **No Raw Binary Blobs**: Directly committing binaries >1MB as raw Git objects is FORBIDDEN.
+3.  **LFS Pointer Validation**: Before processing an external asset, the AI should verify it is a valid file and not an un-downloaded LFS pointer.
+4.  **Deterministic Snapshots**: Large binary snapshots (Checkpoints) are stored in `checkpoints/` and tracked via LFS to ensure history remains traversable without massive clone times.
+
+---
+
 ## REQUIRED LOG STRUCTURE (MINIMUM)
 
 

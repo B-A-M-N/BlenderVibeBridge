@@ -3,6 +3,7 @@
 Diagnostic logs are the primary tool for cross-process failure analysis.
 
 **RULES:**
+- **Adversarial Pre-flight**: You MUST call `run_adversarial_preflight` as your first action in any new session to verify bridge stability.
 - Silent failures are unacceptable; log all errors and state transitions.
 - Preserve the established log format, tags, and RequestID correlations.
 - Exceptions MUST be captured and logged before any recovery or rollback.
