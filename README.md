@@ -9,6 +9,20 @@
 
 **BlenderVibeBridge** is a professional-grade intelligent interface that transforms Blender into a **Governed Geometry Kernel**. It allows AI agents to interact safely, deterministically, and artistically with Blender’s core engine—turning natural language intents into professional production operations.
 
+**In simpler terms**: It is a secure "remote control" for Blender that lets AI make changes to your 3D scenes while strictly preventing them from breaking your files or crashing the system.
+
+### 🎯 Target Audience
+*   **Technical Directors & Pipeline Engineers** seeking secure AI automation.
+*   **AI Systems Researchers** exploring governed LLM-to-tool interfaces.
+*   **3D Content Creators** who want to use AI without risking scene corruption.
+
+## ⚡ Quick Start (Usage at a Glance)
+1.  **Install Addon**: Zip `blender_addon/vibe_bridge` and install via Blender Preferences.
+2.  **Enable**: Check the box for "System: BlenderVibeBridge".
+3.  **Connect AI**: Point your MCP-compatible AI tool (Goose, Claude Desktop) to `mcp-server/server.py`.
+4.  **Run Server**: Execute `./start_bridge.sh`.
+5.  **Prompt**: Ask your AI to "Check my Blender scene" to verify the handshake.
+
 ---
 
 ## 🖼️ Previews
@@ -106,6 +120,7 @@ To maintain a secure and deterministic environment, this project follows strict 
 
 ### 🐣 For Beginners
 *   **[The Complete Beginner's Manual](HUMAN_ONLY/FOR_BEGINNERS.md)**: A step-by-step guide to setting up Blender, Python, and the AI bridge.
+*   **[For Hiring Managers](HUMAN_ONLY/FOR_HIRING_MANAGERS.md)**: Engineering audit and systems design overview for technical recruiters.
 
 ### 🛠️ For Engineers & Power Users
 *   **[Technical Installation Guide](HUMAN_ONLY/INSTALL.md)**: Deep dive into architecture, AST auditing, and main-thread dispatching.
