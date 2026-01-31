@@ -21,3 +21,6 @@ For complex operations, use `begin_transaction()` and `commit_transaction()` to 
 
 ## 5. Blender AI Procedural Workflow
 All operations must strictly adhere to the [BLENDER_PROCEDURAL_WORKFLOW.md](./BLENDER_PROCEDURAL_WORKFLOW.md) and [BLENDER_PROCEDURAL_FLOW.md](./BLENDER_PROCEDURAL_FLOW.md) to ensure identity stability across file reloads and undo/redo cycles. Use UUIDs as the primary key for all datablock references.
+
+## 6. Vibe Lifecycle Discipline
+Strict adherence to [LIFECYCLE_DISCIPLINE.md](./LIFECYCLE_DISCIPLINE.md) is required for lifecycle, IO safety, and crash recovery. AI agents must pause automation during user manipulation and respect the failure thresholds.

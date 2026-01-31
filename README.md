@@ -135,6 +135,8 @@ To maintain a secure and deterministic environment, this project follows strict 
 *   **[AI Engineering Constraints](AI_ENGINEERING_CONSTRAINTS.md)**: The "AI Constitution" — non-negotiable safety and structural rules.
 *   **[Blender AI Procedural Workflow](BLENDER_PROCEDURAL_WORKFLOW.md)**: Mandatory procedural steps for identity and state management.
 *   **[Blender AI Procedural Flow](BLENDER_PROCEDURAL_FLOW.md)**: Absolute execution order for AI operations in Blender.
+*   **[Vibe Lifecycle Discipline](LIFECYCLE_DISCIPLINE.md)**: Final safety addendum for lifecycle and IO integrity.
+*   **[Extended Procedural Supplement](PROCEDURAL_SUPPLEMENT.md)**: Advanced execution flows for AI-to-Editor determinism.
 *   **[ISA Specification](ISA_SPEC.md)**: The Instruction Set Architecture (Opcodes and Intent Binding).
 *   **[Blender Kernel Tool Inventory](MCP_BLENDER_KERNEL.md)**: Exhaustive list of all low-level tools and capabilities.
 

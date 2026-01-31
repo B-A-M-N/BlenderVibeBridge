@@ -7,8 +7,9 @@ This document defines the non-negotiable structural constraints for AI-generated
 *   **Non-Composition**: Capabilities are single-use and non-composable.
 *   **Implicit Deny**: Any request lacking the necessary capability token is rejected before processing.
 
-## 2. Forensic Audit & Replay
+## 2. Forensic Audit & Log-Driven Decisions
 *   **Immutable Log**: Every mutation must be logged to `logs/vibe_audit.jsonl` with: `Timestamp`, `RequestID`, `Capability`, `TargetName/Path`, and `SerializedDelta`.
+*   **Log-AS-STATE**: Logs are an input, not just an output. The AI MUST consult the log index before any mutation as defined in [LIFECYCLE_DISCIPLINE.md](./LIFECYCLE_DISCIPLINE.md).
 *   **State Checkpointing**: Strategic Actions must be reproducible via the audit log on a clean session.
 
 ## 3. Serialization & Data Paranoia
@@ -52,13 +53,46 @@ This document defines the non-negotiable structural constraints for AI-generated
 *   **UUID Enforcement**: All datablocks must be managed via UUIDs as defined in [BLENDER_PROCEDURAL_WORKFLOW.md](./BLENDER_PROCEDURAL_WORKFLOW.md) and [BLENDER_PROCEDURAL_FLOW.md](./BLENDER_PROCEDURAL_FLOW.md).
 
 ## 12. No Blender Tricks (Persistence Ban)
-...
+*   **No Handlers**: Registration of `bpy.app.handlers` (e.g., `load_post`, `save_pre`, `frame_change_post`) is STRICTLY FORBIDDEN.
+*   **No Background Timers**: Unauthorized use of `bpy.app.timers` to create persistent background processes is blocked.
+
+## 13. Idempotence & Read-Before-Write
+*   **Atomic Idempotence**: All mutation tools MUST be idempotent. Repeating a request should have no side effects beyond the first successful application.
+*   **RBW Loop**: Every mutation must follow the sequence: `Inspect (Tool)` -> `Validate (Logic)` -> `Mutate (Tool)` -> `Verify (Tool)`.
+*   **Mandatory Reconciliation**: Before any complex multi-step mutation (e.g., character rigging, scene lighting setup), the AI MUST call `reconcile_state` to sync its internal world-model with the bridge.
+
+## 14. Asset Integrity & Scanning
+*   **Mandatory Scan**: All external assets (`.blend`, `.fbx`, `.obj`, `.glb`, etc.) MUST be scanned via `scan_external_asset` before any import or link operation.
+*   **No Auto-Run**: The bridge MUST NOT enable Blender's "Auto-run Python Scripts" preference.
+*   **Script Block**: Any asset found containing embedded Python `import` or `exec` signatures must be rejected.
+
+## 15. Tool Selection Priority (The Hierarchy)
+*   **Level 1: High-Level MCP Tools**: Always prefer `transform_object`, `manage_modifier`, `setup_lighting`, etc. over raw script execution.
+*   **Level 2: Atomic Sandbox**: If no high-level tool exists, use `sandbox_modify_object` to test changes on a clone before applying.
+*   **Level 3: Low-Level Scripting**: `exec_script` is a last resort and REQUIRES a specific, detailed explanation of why high-level tools were insufficient.
+
+## 16. Failure Recovery & Log Authority
+*   **Logs > Inference**: If an operation fails, the AI MUST call `get_blender_errors()` and inspect `logs/vibe_audit.jsonl` BEFORE asking the user or retrying.
+*   **Consultation Gate**: No state-changing operation may execute without explicit log consultation and acknowledgment as per [LIFECYCLE_DISCIPLINE.md](./LIFECYCLE_DISCIPLINE.md).
+*   **Hardware Awareness**: Respect `ResourceMonitor` blocks. If blocked by `RAM CRITICAL` or `VRAM LOW`, the AI must wait, suggest purging orphans (`purge_orphans`), or downscaling resolutions before proceeding.
+*   **Transaction Rollback**: If a transaction fails, `rollback_transaction` MUST be called to restore the last known good state.
+
+## 17. Heartbeat & Progress Monitoring
+*   **Heavy Ops**: For long-running operations (Baking, IO, Physics), the AI MUST periodically call `check_heartbeat()` to track the `progress` field.
+*   **Activity Gating**: If a command response is delayed, the AI MUST assume the user is performing a manual stroke and wait patiently rather than spamming retries.
+
 ## 18. Headless CI/CD Support
 *   **Background Detection**: When `get_scene_telemetry()` shows no active windows, the AI MUST avoid viewport-specific commands (e.g., `set_viewport_shading`) and focus on data-only mutations.
 
 ## 19. Blender AI Procedural Workflow
 *   **Mandatory Adherence**: All AI operations must follow the steps defined in [BLENDER_PROCEDURAL_WORKFLOW.md](./BLENDER_PROCEDURAL_WORKFLOW.md) and the execution order in [BLENDER_PROCEDURAL_FLOW.md](./BLENDER_PROCEDURAL_FLOW.md).
 *   **UUID Authoritative**: Names are cosmetic; UUIDs stored in datablock custom properties are the authoritative source of identity.
+
+## 20. Vibe Lifecycle Discipline (Blender)
+*   **Safety Protocols**: All operations must strictly follow the lifecycle, IO, and crash recovery rules defined in [LIFECYCLE_DISCIPLINE.md](./LIFECYCLE_DISCIPLINE.md).
+*   **Performance Watchdog**: Enforce throttling, debouncing, and yield loops to prevent editor hangs and infinite loop spirals.
+*   **Atomic Snapshots**: All mutations require a pre-operation snapshot and must be safe to auto-rollback on any failure.
+*   **Zero Trust IO**: All file IO and asset imports must be treated as untrusted and validated against race conditions.
 
 ## The Meta-Rule
 If a proposed solution is unusually short, clever, or bypasses a limitation, assume it is wrong. Prioritize safety and explicit verification over brevity.

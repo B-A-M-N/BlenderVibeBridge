@@ -1,155 +1,126 @@
-# BLENDER AI PROCEDURAL FLOW (v1.0.0)
+# BLENDER AI PROCEDURAL FLOW (v1.1.0)
 
 **Objective:** Preserve identity, prevent crashes, survive undo/reload, and maintain external sync integrity.
 
 ---
 
-## FLOW 0 — ATTACH
+## FLOW 0 — ATTACH & BOOTSTRAP
 
 1. Wait until Blender is **idle** (no modal operator, no render, no undo push).
 2. Confirm a `.blend` file is loaded.
 3. Abort if Blender is compiling shaders or saving.
+4. Detect last shutdown state. If abnormal:
+   * Enter **Safe Mode**.
+   * Disable automation layers.
+   * Require explicit user opt-in to re-enable.
 
 ---
 
-## FLOW 1 — LOAD STATE
+## FLOW 1 — CAPABILITY & STATE LOAD
 
-4. Load UUID registry from:
-   * Datablock custom properties
-   * Sidecar registry file (backup)
-5. Validate registry schema.
-6. If registry missing → initialize empty registry.
+5. Query editor capabilities (undo depth, auto-save interval). Adjust behavior accordingly.
+6. Load UUID registry from datablock custom properties and sidecar registry file (backup).
+7. Validate registry schema and version. If mismatch, run migration or abort.
+8. If registry missing → initialize empty registry.
 
 ---
 
 ## FLOW 2 — INDEX DATA
 
-7. Scan all datablocks:
-   * Objects
-   * Meshes
-   * Materials
-   * Armatures
-   * Actions
-   * Images
-   * Collections
-8. Build map:
-   ```
-   UUID → datablock reference
-   ```
+9. Scan all datablocks (Objects, Meshes, Materials, Armatures, Actions, Images, Collections).
+10. Build map: `UUID → datablock reference`.
 
 ---
 
 ## FLOW 3 — ENFORCE IDENTITY
 
-9. For each datablock:
-   * If UUID exists → continue
-   * If UUID missing → generate UUID
-   * Write UUID to datablock custom property
-10. Detect duplicate UUIDs.
-11. On collision:
-    * Freeze operations
-    * Regenerate UUID for newest datablock
-    * Persist immediately
+11. For each datablock:
+    * If UUID exists → continue.
+    * If UUID missing → generate UUID and write to datablock custom property.
+12. Detect duplicate UUIDs. On collision:
+    * Freeze operations.
+    * Regenerate UUID for newest datablock and persist immediately.
 
 ---
 
-## FLOW 4 — SNAPSHOT (MANDATORY)
+## FLOW 4 — SNAPSHOT & LOG CONSULTATION (MANDATORY)
 
-12. Serialize snapshot:
-    * UUID ↔ datablock name
-    * UUID ↔ datablock type
-    * UUID ↔ external references
-13. Timestamp snapshot.
-14. Abort if snapshot incomplete.
+13. Serialize snapshot (UUID ↔ name, type, and external references).
+14. **Consult Audit Logs**: Query the log index for prior failures, incomplete transactions, or crash flags associated with target UUIDs.
+15. Timestamp snapshot.
+16. Abort if snapshot incomplete or log consultation indicates terminal instability.
 
 ---
 
-## FLOW 5 — EXECUTE OPERATION
+## FLOW 5 — EXECUTE OPERATION (TRANSACTIONAL)
 
-15. Execute requested task.
-16. Resolve all targets **by UUID only**.
-17. Never store long-lived Python object references.
-18. Wrap mutations in undo-safe blocks.
-
----
-
-## FLOW 6 — STABILITY MONITOR
-
-19. Monitor for:
-    * Repeated exceptions
-    * Undo stack corruption
-    * UI freeze
-20. If instability detected:
-    * Abort operation
-    * Disable automation
-    * Preserve state
+17. Wrap operation in a transaction: `begin → mutate → validate → commit | rollback`.
+18. Resolve all targets **by UUID only**.
+19. Never store long-lived Python object references.
+20. Serialize writes through a **single writer queue** (One write at a time).
 
 ---
 
-## FLOW 7 — RECOVERY TRIGGERS
+## FLOW 6 — STABILITY & MONITOR
 
-**Triggered on:**
-* Undo / redo
-* File reload
-* Auto-save restore
-* External sync reconnect
-
-21. Drop all cached datablock references.
-22. Re-scan all datablocks.
-23. Rebuild:
-    ```
-    UUID → datablock reference
-    ```
+20. Monitor for repeated exceptions, undo stack corruption, or UI freeze.
+21. If instability detected:
+    * Abort operation and roll back to snapshot.
+    * Disable automation and preserve state.
 
 ---
 
-## FLOW 8 — REATTACH EXTERNAL LINKS
+## FLOW 7 — RECOVERY & RELOAD
 
-24. Rebind Unity / server / tool references via UUID.
-25. Ignore datablock names, suffixes, order.
+**Triggered on: Undo/Redo, File Reload, Auto-save restore, Script Reload.**
 
----
-
-## FLOW 9 — SELF-HEAL
-
-26. Assign UUIDs to newly discovered datablocks.
-27. Archive mappings for deleted datablocks.
-28. Never auto-resolve ambiguous matches.
+22. Drop all cached datablock references (handles are volatile).
+23. Re-scan all datablocks and rebuild: `UUID → datablock reference`.
+24. Rebind external links (Unity/server) via UUID.
 
 ---
 
-## FLOW 10 — VALIDATE
+## FLOW 8 — INTERCEPT & SELF-HEAL
 
-29. Validate:
-    * UUID uniqueness
-    * Registry parity
-    * External mapping validity
-30. Log results.
-31. Persist registry and logs.
+25. **Duplication**: Detect duplicated datablocks; regenerate UUID for the duplicate immediately.
+26. **Deletion**: Detect deletion; tombstone UUID, notify external systems, and archive mapping.
+27. **Discovery**: Assign UUIDs to newly discovered datablocks. Never auto-resolve ambiguous matches.
+
+---
+
+## FLOW 9 — VALIDATE & AUDIT
+
+28. Validate UUID uniqueness, registry parity, and external mapping validity.
+29. Emit structured logs (Timestamp, UUID, Operation, Result).
+30. Persist registry and logs. Ensure logs are replayable for recovery.
+
+---
+
+## FLOW 10 — MODAL & USER ISOLATION
+
+31. Treat modal operations (sculpt, paint, etc.) as non-persistent/blocking.
+32. Detect manual edits and pause automation immediately.
+33. Resume automation only when the editor is verified idle.
 
 ---
 
 ## FLOW 11 — IDLE / WATCH
 
-32. Enter watch mode.
-33. Listen for:
-    * Datablock creation/deletion
-    * Mode changes
-    * File save/load
-    * External requests
-34. Throttle checks to avoid UI degradation.
+34. Enter watch mode with performance governors (Max scan frequency/repair ops per tick).
+35. **Debounce Events**: Throttled listener execution to avoid loop spirals.
+36. Listen for datablock changes, mode transitions, and external requests.
+37. Yield execution if performance limits are exceeded to maintain UI responsiveness.
 
 ---
 
 # ABSOLUTE ENFORCEMENT RULES
 
-* UUID stored in datablock custom properties is authoritative
-* Python object references are disposable
-* Undo invalidates assumptions
-* File reload invalidates everything
-* Never trust names
-* Never trust order
-* Never guess
+* UUID stored in datablock custom properties is authoritative.
+* Python object references are disposable.
+* Undo/Reload invalidates all cached handles.
+* Automation never fights the editor or the user.
+* Transactions are never partial; roll back on any failure via pre-operation snapshots.
+* Automation knows when to stop (Error escalation ladder).
 
 ---
 
@@ -157,5 +128,3 @@
 
 Unity: Domain Reload → Re-index → Rebind by UUID
 Blender: Undo/File Reload → Re-index → Rebind by UUID
-
-Same spine. Different failure modes.

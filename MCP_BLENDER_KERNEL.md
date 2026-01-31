@@ -75,8 +75,15 @@
 *   Pose Mode Corruption Reset
 *   Shape Key Diff Tool
 
-### Add-ons
-*   Add-on Firewall / Quarantine
+--- 
+
+## 🔵 5. LIFECYCLE & IO DISCIPLINE (Anti-Race & Recovery)
+*Rules that keep the system alive across sync bursts.*
+
+*   **Atomic IO Sentinel**: Blocks reads of half-written files via checksum/marker validation. (**ACTIVE**)
+*   **TOCTOU JIT Validator**: Re-resolves datablocks by UUID immediately before every mutation. (**ACTIVE**)
+*   **Crash Loop Circuit Breaker**: Disables automation and triggers Safe Mode after consecutive boot failures. (**ACTIVE**)
+*   **User Manipulation Pauser**: Temporarily yields control when manual user edits are detected. (**ACTIVE**)
 
 ---
 
