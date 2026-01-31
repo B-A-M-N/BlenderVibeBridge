@@ -19,6 +19,11 @@
 *   **Mechanism**: Belief Provenance, Confidence Decay, Counterfactual Pressure, Narrative Suppression.
 *   **Prevents**: Protocol erosion, False confidence accumulation, Long-horizon drift.
 
+## 4. FOURTH ORDER: GOVERNANCE INVARIANCES (Human Boundary)
+*   **Question**: *"Who is responsible for systemic deviations?"*
+*   **Mechanism**: Veto Protocol, Audit Cycles, Manual Snapshots.
+*   **Prevents**: Unaccountable human bypasses and operational shortcuts.
+
 ---
 
 ### EPISTEMIC INVARIANTS (Third-Order)

@@ -144,10 +144,12 @@ To maintain a secure and deterministic environment, this project follows strict 
 ### 🛡️ Security & Failure Protocols
 *   **[Security Policy](HUMAN_ONLY/SECURITY.md)**: Vulnerability reporting and baseline security mandates.
 *   **[Security & Architecture Deep Dive](HUMAN_ONLY/SECURITY_DOCS.md)**: The "Iron Box" safety model explained.
+*   **[Triple-Lock Invariance Model](HUMAN_ONLY/TRIPLE_LOCK.md)**: The three-layer verification system for absolute determinism.
 *   **[Agent Isolation Architecture](HUMAN_ONLY/AGENT_ISOLATION.md)**: Multi-agent sandboxing to prevent context poisoning.
 *   **[Freeze-Proofing & Recovery Guide](HUMAN_ONLY/FREEZE_PROOFING.md)**: Prevention and recovery from Blender hangs and crashes.
 
 ### 📜 Doctrine & Legal
+*   **[Governance & Override Policy](HUMAN_ONLY/GOVERNANCE_POLICY.md)**: Rules for the "Fourth Order" (Human-in-the-Loop).
 *   **[Non-Goals & Doctrine](NON_GOALS.md)**: Intentional limitations to prevent "AI Psychosis."
 *   **[AI Context & Philosophy](AI_CONTEXT.md)**: Philosophical guide to adversarial prompting and the "Overconfidence Trap."
 *   **[Full Feature Manifest](HUMAN_ONLY/FEATURES.md)**: The authoritative list of all functional abilities.
