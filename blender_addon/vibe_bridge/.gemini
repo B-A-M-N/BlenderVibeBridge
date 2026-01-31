@@ -1,0 +1,13 @@
+# BLENDER ADDON & BRIDGE IDENTITY
+
+This directory contains the VibeBridge addon. It functions as a networked client in a synchronized system.
+
+**RULES:**
+- `register()` and `unregister()` MUST be perfectly symmetric.
+- Persistent handlers MUST be explicitly removable to prevent leaks.
+- Do NOT refactor networking or IPC logic without specific instructions.
+- Message formats are contractual; any change requires a schema version update.
+- Graceful recovery from external server restarts is mandatory.
+
+**REFERENCE:**
+- Adhere to the [BLENDER_FLOW.md](../../BLENDER_FLOW.md) for synchronization contracts.

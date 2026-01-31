@@ -1,0 +1,13 @@
+# CRITICAL BLENDER CORE
+
+This directory contains the event loop, timers, and high-level IPC handlers.
+
+**ABSOLUTE RULES:**
+- Do NOT alter execution order or the timer cadence.
+- Do NOT replace `bpy.app.timers` with busy loops or `time.sleep()`.
+- Do NOT block the main thread; any operation >100ms MUST be modal or async.
+- Socket and timer lifecycles are intentional and must remain stable.
+- If stability issues occur, diagnose via `bridge.log` before modifying core logic.
+
+**REFERENCE:**
+- See [BLENDER_FLOW.md](../../../BLENDER_FLOW.md) for the authoritative startup and polling sequence.

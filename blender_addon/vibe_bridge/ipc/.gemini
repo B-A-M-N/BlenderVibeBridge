@@ -1,0 +1,12 @@
+# IPC FLOW CONSTRAINTS
+
+This layer handles the low-level communication between Blender and the Bridge Server.
+
+**RULES:**
+- All I/O must be non-blocking or managed via `bpy.app.timers`.
+- The Blender UI MUST remain responsive during all network operations.
+- Do NOT introduce busy loops or synchronous waits for server responses.
+- Disconnects are an expected part of the lifecycle; implement graceful reconnection.
+
+**REFERENCE:**
+- Handshake and connection state rules are defined in [BLENDER_FLOW.md](../../../BLENDER_FLOW.md).

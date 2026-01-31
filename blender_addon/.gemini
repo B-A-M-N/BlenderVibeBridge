@@ -1,0 +1,13 @@
+# BLENDER GLOBAL DIRECTIVES
+
+Blender operates under a modal, event-driven system. It is a controlled runtime, not an ad-hoc scripting environment.
+
+**RULES:**
+- Do NOT assume linear execution.
+- Blocking calls CAN and WILL freeze the UI.
+- Context (`bpy.context`) is volatile and state-dependent.
+- Operators may fail silently depending on viewport or mode state.
+- Stability and Flow integrity outrank convenience.
+
+**REFERENCE:**
+- Follow the [BLENDER_FLOW.md](../BLENDER_FLOW.md) for all IPC and lifecycle logic.

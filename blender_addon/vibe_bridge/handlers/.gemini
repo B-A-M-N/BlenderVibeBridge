@@ -1,0 +1,12 @@
+# HANDLER SAFETY RULES
+
+This layer manages event-driven callbacks (Scene Load, Undo, Frame Change).
+
+**RULES:**
+- Handlers may be registered multiple times by Blender; always guard against duplicates.
+- All handlers MUST be removed in the `unregister()` phase.
+- Scene changes and reloads trigger unexpected callbacks; maintain state re-indexing.
+- Defer heavy work from handlers to the next timer tick.
+
+**REFERENCE:**
+- Follow the lifecycle hooks in [BLENDER_FLOW.md](../../../BLENDER_FLOW.md).
