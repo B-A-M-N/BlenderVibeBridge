@@ -17,6 +17,7 @@ Before answering ANY user prompt, you MUST:
 
 ## 🔒 NON-NEGOTIABLE CONSTRAINTS
 *   **Audit-First Recovery**: If a tool fails, the FIRST action must be calling `get_vibe_audit_log` or `tail bridge.log`. "Guessing" the failure mode is a protocol violation.
+*   **Forced Ingestion**: If a mutation fails, the bridge enters `RECOVERY_MODE`. You are hard-blocked from further mutations until you call `get_blender_errors` or `get_vibe_audit_log` to ingest the failure traceback.
 *   **Thread Safety**: NEVER call `bpy` (including timers) from a side thread. All Blender mutations must be main-thread dispatched.
 *   **Epistemic Governance**: Be aware that the kernel generates scene hashes before and after every mutation. Your work is forensic and logged.
 *   **Semantic Validation**: The kernel will reject any data containing NaNs, Infinity, or insane magnitudes (>1M).
@@ -27,6 +28,15 @@ Before answering ANY user prompt, you MUST:
 *   **Grounding**: If proposing 'unique' solutions, you MUST explicitly state failure modes to avoid the Overconfidence Trap.
 *   **Truth Reconciliation**: Call `reconcile_state` to ensure your internal world-model matches Blender.
 *   **Workspace Hygiene**: Store ALL temporary/diagnostic files in `avatar_scripts/`. NEVER pollute the root.
+
+## 8. Git Isolation Mandate (Iron Box Save-Game)
+- **Primary Repo (.git)**: Strictly for VibeBridge Kernel code and tool logic. NEVER commit `.mat`, `.fbx`, `.png`, or scene data here.
+- **Safety Repo (.git_safety)**: Used for all project-level snapshots and "save-games." This repo is local-only and has no remote.
+- **Snapshot Protocol**: When performing high-risk operations (Baking, Blender Export), the agent MUST use:
+  `git --git-dir=.git_safety --work-tree=. add .`
+  `git --git-dir=.git_safety --work-tree=. commit -m "[Snapshot Name]"`
+- **Push Restriction**: `git push` is FORBIDDEN unless the user explicitly requests a GitHub release of the VibeBridge codebase.
+- **Exclusion**: `.git_safety/` MUST remain in `.git/info/exclude` to prevent accidental nesting.
 
 **FAILURE TO FOLLOW THESE RULES IS A CRITICAL SYSTEM ERROR.**
 If you find yourself "guessing," STOP. Consult the telemetry.

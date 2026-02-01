@@ -2,7 +2,17 @@
 
 ## 🏛️ Kernel v1.3.0 Mandates
 - **Zero-Trust**: Read-Before-Write (`get_scene_telemetry`) is mandatory.
+- **Forced Ingestion**: If a mutation fails, the bridge enters `RECOVERY_MODE`. You are hard-blocked from further mutations until you call `get_blender_errors` or `get_vibe_audit_log` to ingest the failure traceback.
 - **Resiliency**: Use `bpy.data` name lookups; verify object existence before mutation.
 - **Forensics**: Your mutations are forensic and logged to `vibe_audit.jsonl`.
 - **Performance**: Adhere to the 5Hz rate limit and hardware railings.
 - **Privacy**: Accessing the `HUMAN_ONLY/` directory is STRICTLY FORBIDDEN and will trigger a capability revocation.
+
+## 8. Git Isolation Mandate (Iron Box Save-Game)
+- **Primary Repo (.git)**: Strictly for VibeBridge Kernel code and tool logic. NEVER commit `.mat`, `.fbx`, `.png`, or scene data here.
+- **Safety Repo (.git_safety)**: Used for all project-level snapshots and "save-games." This repo is local-only and has no remote.
+- **Snapshot Protocol**: When performing high-risk operations (Baking, Blender Export), the agent MUST use:
+  `git --git-dir=.git_safety --work-tree=. add .`
+  `git --git-dir=.git_safety --work-tree=. commit -m "[Snapshot Name]"`
+- **Push Restriction**: `git push` is FORBIDDEN unless the user explicitly requests a GitHub release of the VibeBridge codebase.
+- **Exclusion**: `.git_safety/` MUST remain in `.git/info/exclude` to prevent accidental nesting.

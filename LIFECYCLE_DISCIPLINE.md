@@ -314,6 +314,17 @@ To ensure absolute state recovery even in the event of a total kernel crash or m
 
 ---
 
+## 31. FORCED FORENSIC INGESTION
+
+To prevent "Guess-and-Check" coding and iterative scene trashing, the bridge enforces a technical lock-out following any failure:
+
+1.  **Failure Trigger**: If any mutation returns an `ERROR` status or an IPC timeout occurs, the MCP Server enters `RECOVERY_MODE`.
+2.  **Mutation Block**: In `RECOVERY_MODE`, all mutation-capable tools (e.g., `exec_script`, `transform_object`, `manage_modifier`) are HARD-BLOCKED.
+3.  **Mandatory Ingestion**: The AI agent is technically forbidden from issuing further mutations until it has successfully called `get_blender_errors` or `get_vibe_audit_log`.
+4.  **State Reconciliation**: Reading the logs updates the agent's internal world-model with the forensic traceback, ensuring the next proposed fix is grounded in evidence rather than probability.
+
+---
+
 ## REQUIRED LOG STRUCTURE (MINIMUM)
 
 ```

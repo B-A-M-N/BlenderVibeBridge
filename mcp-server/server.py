@@ -81,6 +81,7 @@ class SecurityMonitor:
         self.violations = 0
         self.threshold = threshold
         self.panic_mode = False
+        self.recovery_mode = False
 
     def report_violation(self, reason):
         self.violations += 1
@@ -89,9 +90,20 @@ class SecurityMonitor:
             self.panic_mode = True
             sys.stderr.write("\n[!!!] PANIC MODE ACTIVATED: BRIDGE IS NOW READ-ONLY.\n")
 
+    def enter_recovery(self):
+        self.recovery_mode = True
+        logger.warning("RECOVERY_MODE ACTIVATED: State reconciliation required via log ingestion.")
+
+    def exit_recovery(self):
+        if self.recovery_mode:
+            self.recovery_mode = False
+            logger.info("RECOVERY_MODE DEACTIVATED: State reconciled.")
+
     def is_safe(self, is_mutation):
         if self.panic_mode and is_mutation:
             return False, "PANIC MODE: All mutations blocked."
+        if self.recovery_mode and is_mutation:
+            return False, "RECOVERY_MODE_ACTIVE: Mutation blocked. You MUST call 'get_blender_errors' or 'get_vibe_audit_log' to ingest the failure traceback before retrying."
         return True, None
 
 monitor = SecurityMonitor(threshold=3)
@@ -177,15 +189,22 @@ def blender_request(method, path, data=None, is_mutation=False):
                         resp_json = json.load(f)
                     os.remove(outbox_file)
                     AuditLogger.log_mutation(method, path, data, resp_json)
+                    
+                    # Handle Logical Errors in response
+                    if resp_json.get("status") == "ERROR":
+                        monitor.enter_recovery()
+                        
                     return resp_json
                 except Exception as e:
                     retries += 1
                     if retries > 5:
+                        monitor.enter_recovery()
                         return {"error": f"Airlock Corruption: {str(e)}"}
                     time.sleep(0.2)
                     continue
             time.sleep(0.1)
             
+        monitor.enter_recovery()
         return {"error": f"Airlock Timeout: Blender did not process mutation {cmd_id} within {timeout}s"}
 
     # --- HTTP READ PATH (is_mutation=False) ---
@@ -619,6 +638,7 @@ def check_heartbeat() -> str:
 def get_vibe_audit_log(lines: int = 20) -> str:
     """Retrieves the last N entries from the JSONL audit log.
     Essential for verifying why an operation was BLOCKED or failed."""
+    monitor.exit_recovery()
     path = "/home/bamn/BlenderVibeBridge/logs/vibe_audit.jsonl"
     if os.path.exists(path):
         try:
@@ -702,6 +722,7 @@ def get_current_beliefs() -> str:
 @mcp.tool()
 def get_blender_errors() -> str:
     """Retrieves the last 20 lines from the bridge.log file for low-level debugging."""
+    monitor.exit_recovery()
     path = "/home/bamn/BlenderVibeBridge/bridge.log"
     if os.path.exists(path):
         try:
