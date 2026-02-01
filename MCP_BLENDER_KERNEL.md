@@ -109,3 +109,12 @@
 1.  **Operation Sandboxing** (✅ COMPLETED).
 2.  **Orphan Purge** (✅ COMPLETED).
 3.  **Armature Audit** (✅ COMPLETED).
+
+---
+
+## 🟣 6. FORENSIC RECOVERY & INTEGRITY GATING
+*Self-correcting state machines for AI orchestration.*
+
+*   **RECOVERY_MODE State Machine**: Hard-blocks mutations after any failure until `get_blender_errors` or `get_vibe_audit_log` is called. (**ACTIVE**)
+*   **Integrity Gate (--integrity)**: Cross-references filesystem modification times with the `vibe_audit.jsonl` and Ghost Audit Git status. (**ACTIVE**)
+*   **Transaction Timeout Watchdog**: Monotonic 60s timer that clears locks and rolls back hung transactions. (**ACTIVE**)

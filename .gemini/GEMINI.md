@@ -38,5 +38,16 @@ Before answering ANY user prompt, you MUST:
 - **Push Restriction**: `git push` is FORBIDDEN unless the user explicitly requests a GitHub release of the VibeBridge codebase.
 - **Exclusion**: `.git_safety/` MUST remain in `.git/info/exclude` to prevent accidental nesting.
 
+## 9. Transaction Gating (Mandatory)
+- **Hard Gate**: All write/mutation commands are REJECTED by the kernel unless an active transaction is open.
+- **Protocol**: You MUST call `begin_transaction()` before any mutation.
+- **Heartbeat**: Transactions have a **60-second safety timeout**. If you do not call `commit_transaction()` within 60s, the kernel will auto-rollback and clear your lock.
+
+## 10. Ghost Audit Execution (Commit-on-Commit)
+- **Local Checkpoint**: Immediately following a successful `commit_transaction()`, you MUST execute a git checkpoint in the project directory using the safety repo:
+  `git --git-dir=.git_safety --work-tree=. add .`
+  `git --git-dir=.git_safety --work-tree=. commit -m "Ghost Audit: [Action Description]"`
+- **Forensic Verification**: Use `security_gate.py --integrity` before finishing your turn to ensure the disk state matches the audit log.
+
 **FAILURE TO FOLLOW THESE RULES IS A CRITICAL SYSTEM ERROR.**
 If you find yourself "guessing," STOP. Consult the telemetry.

@@ -62,6 +62,20 @@
 
 ---
 
+## 4. 🔄 The Atomic Save-Game Loop (Execution Mandate)
+**Objective:** Absolute forensic traceability and reversible orchestration.
+
+Every AI Turn MUST follow this loop. Skipping steps is a protocol violation.
+
+1.  **Handshake**: `check_heartbeat()` + `get_state_hash()`.
+2.  **Open Transaction**: `begin_transaction()`.
+3.  **Mutate**: Execute high-level tools or `exec_script`.
+4.  **Close Transaction**: `commit_transaction()` with rationale and hash.
+5.  **Ghost Audit**: `git --git-dir=.git_safety --work-tree=. add .` && `git --git-dir=.git_safety --work-tree=. commit -m "..."`.
+6.  **Verify Integrity**: `python3 mcp-server/security_gate.py --integrity`.
+
+---
+
 ## 🚀 Implementation Roadmap
 
 1.  **Phase 1 (Complete):** Atomic Wrapper, Checkpoints, Janitor.
