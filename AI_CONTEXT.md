@@ -20,7 +20,7 @@ VibeBridge is not a creative tool; it is a **Distributed Proof System** designed
 
 
 
-1.  **First Order: State Truth (Reality Anchoring)**: Prevents hallucinations and ghost state via hard hashes, handshakes, and monotonic heartbeats. This is anchored to the disk via the **Ghost Audit**—a local-only Git system that provides a cryptographically verifiable history of every asset change.
+1.  **First Order: State Truth (Reality Anchoring)**: Prevents hallucinations and ghost state via hard hashes, handshakes, and monotonic heartbeats. This is anchored to the disk via the **Ghost Audit**—a local-only Git system that provides a cryptographically verifiable history of every asset change. **Secret Redaction** ensures that this history remains private by scrubbing API keys and credentials before logging.
 
 2.  **Second Order: Causal Correctness (Behavioral Sanity)**: Prevents thrashing and infinite retry loops via idempotency keys, entropy budgets, and proof-of-work commits.
 

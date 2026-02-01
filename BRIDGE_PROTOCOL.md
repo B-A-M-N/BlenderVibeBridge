@@ -34,3 +34,9 @@ To prevent irreversible data loss and provide high-fidelity session history, the
 - **Commit-on-Commit**: Every successful `commit_transaction` within Blender triggers an automatic `git add . && git commit` in the project directory.
 - **LFS Tracking**: Large assets (.fbx, .blend, .png) MUST be tracked via Git LFS to maintain repository performance.
 - **Integrity Gating**: The Security Gate (`--integrity`) verifies that the project's disk state is clean before finalizing any AI task.
+
+## 9. Reflex Arc Architecture (2-Agent System)
+To prevent engine-sync deadlocks and maintain a clean creative context, the bridge utilizes a **Reflex Arc**:
+- **Foreman (Gemini CLI)**: Handles high-level strategy and issues structured intents to `vibe_queue/intents/`.
+- **Operator (scripts/operator.py)**: A dedicated low-level slave that polls for intents, generates `bpy` code via Gemini Flash, and handles the engine-sync waiting logic.
+- **Kernel Airlock**: The Operator pushes processed commands to `vibe_queue/kernel/`, which the Blender Kernel processes only when the engine is stable.

@@ -16,6 +16,7 @@ import os
 import hashlib
 import json
 import time
+import re
 
 class SecurityGate:
     """
@@ -153,7 +154,16 @@ class SecurityGate:
         if cls.is_trusted(code):
             return []
 
-        # Strict ASCII Check
+        # 1. Bytecode Compilation Check (The "Compilation" Pass)
+        try:
+            # This catches SyntaxErrors, IndentationErrors, etc.
+            compile(code, '<vibe_bridge_payload>', 'exec')
+        except SyntaxError as e:
+            return [f"Compilation Error: {e.msg} at line {e.lineno}"]
+        except Exception as e:
+            return [f"Pre-compilation Failure: {str(e)}"]
+
+        # 2. Strict ASCII Check
         try:
             code.encode('ascii')
         except UnicodeEncodeError:
@@ -262,11 +272,18 @@ class SecurityGate:
             # Secret Detection
             if isinstance(node, ast.Assign):
                 for target in node.targets:
-                    if isinstance(target, ast.Name):
-                        var_name = target.id.upper()
-                        if any(k in var_name for k in ['KEY', 'SECRET', 'TOKEN', 'PASSWORD', 'AUTH', 'CREDENTIAL']):
+                    if isinstance(target, (ast.Name, ast.Attribute)):
+                        name = cls._resolve_full_path(target).upper()
+                        if any(k in name for k in ['KEY', 'SECRET', 'TOKEN', 'PASSWORD', 'AUTH', 'CREDENTIAL']):
+                            # Check if the value is a string or suspicious literal
                             if cls._is_sensitive_value(node.value):
-                                errors.append(f"Security Violation: Potential hardcoded secret in variable '{target.id}'")
+                                errors.append(f"Security Violation: Potential hardcoded secret in '{name}'")
+            
+            # Explicit API Key Pattern Match in Constants
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                # Match typical Gemini/Google/Generic API key patterns
+                if re.match(r'^[AIzaSy][a-zA-Z0-9_\-]{38}$', node.value):
+                    errors.append("Security Violation: Hardcoded API Key detected in script literal.")
 
         return errors
 

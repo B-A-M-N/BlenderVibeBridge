@@ -325,6 +325,16 @@ To prevent "Guess-and-Check" coding and iterative scene trashing, the bridge enf
 
 ---
 
+## 32. REFLEX LOOP STABILITY
+
+The 2-Agent Reflex Arc must maintain strict separation to avoid context poisoning:
+
+1.  **Queue Isolation**: High-level intents and low-level kernel payloads MUST live in separate directories (`vibe_queue/intents/` vs `vibe_queue/kernel/`).
+2.  **Wait-for-Stable Rule**: The Operator agent MUST verify `responsive: true` and a stable Depsgraph before triggering a Kernel mutation.
+3.  **Flash Redaction**: All API-driven code generation must use redacted failure paths. No API keys may ever appear in the `intent` or `outbox` results.
+
+---
+
 ## REQUIRED LOG STRUCTURE (MINIMUM)
 
 ```

@@ -1,18 +1,53 @@
+# BlenderVibeBridge: Dual-License & Maintenance Agreement (v1.2)
+# Copyright (C) 2026 B-A-M-N (The "Author")
+#
+# This software is distributed under a Dual-Licensing Model:
+# 1. THE OPEN-SOURCE PATH: GNU AGPLv3 (see LICENSE for details)
+# 2. THE COMMERCIAL PATH: "WORK-OR-PAY" MODEL
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+
+# BlenderVibeBridge: Hardened Airlock (v1.5.0)
 import bpy
 import os
 import json
 import time
 from ..logging.logger import vibe_log
+from ..handlers.opcodes import OPCODE_MAP
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 
 BASE_PATH = '/home/bamn/BlenderVibeBridge'
-INBOX_PATH = os.path.join(BASE_PATH, 'vibe_queue', 'inbox')
-OUTBOX_PATH = os.path.join(BASE_PATH, 'vibe_queue', 'outbox')
+INBOX_PATH = os.path.join(BASE_PATH, 'vibe_queue', 'kernel', 'inbox')
+OUTBOX_PATH = os.path.join(BASE_PATH, 'vibe_queue', 'kernel', 'outbox')
+
+class AirlockHandler(FileSystemEventHandler):
+    def on_created(self, event):
+        if not event.is_directory and event.src_path.endswith('.json'):
+            # Trigger process via timer (main thread safe)
+            pass
+
+observer = None
+
+def start_watchdog():
+    global observer
+    if observer and observer.is_alive(): return
+    os.makedirs(INBOX_PATH, exist_ok=True)
+    event_handler = AirlockHandler()
+    observer = Observer()
+    observer.schedule(event_handler, INBOX_PATH, recursive=False)
+    observer.daemon = True
+    observer.start()
+    vibe_log("WATCHDOG: Event-driven airlock active.")
 
 class TransactionGate:
     def __init__(self):
         self.active = False
         self.start_time = 0
-        self.timeout = 60 # Seconds
+        self.timeout = 60
         self.project_path = "/home/bamn/ALCOM/Projects/BAMN-EXTO"
 
     def begin(self):
@@ -23,109 +58,98 @@ class TransactionGate:
     def commit(self, intent="GENERAL"):
         self.active = False
         vibe_log("TRANSACTION COMMITTED")
-        self.local_checkpoint(f"Bridge Audit: {intent}")
+        self.local_checkpoint(f"Ghost Audit: {intent}")
 
     def rollback(self):
         self.active = False
         vibe_log("TRANSACTION ROLLED BACK")
 
     def local_checkpoint(self, message):
-        """Creates a local-only git commit in the project folder."""
-        if not os.path.exists(os.path.join(self.project_path, ".git")):
-            return
-        
+        if not os.path.exists(os.path.join(self.project_path, ".git")): return
         try:
             import subprocess
-            # Ensure LFS is tracking what it needs
             subprocess.run(["git", "-C", self.project_path, "add", "."], check=True)
             subprocess.run(["git", "-C", self.project_path, "commit", "-m", message], check=True)
-            vibe_log(f"GHOST AUDIT: Checkpoint created - {message}")
         except Exception as e:
-            vibe_log(f"GHOST AUDIT FAILURE: {e}")
+            vibe_log(f"GHOST_AUDIT_FAILURE: {e}")
 
     def check_timeout(self):
         if self.active and (time.time() - self.start_time > self.timeout):
-            vibe_log("TRANSACTION TIMEOUT - AUTO ROLLBACK")
+            vibe_log("TRANSACTION TIMEOUT")
             self.rollback()
-            return True
-        return False
-
-    def is_safe(self, cmd_type, action):
-        # Transaction management ops are always safe
-        if cmd_type == 'system_op' and action in ['begin_transaction', 'rollback_transaction', 'commit_transaction']:
-            return True
-        # Read ops (queries) would normally be safe, but airlock is primarily for mutations
-        if not self.active:
-            return False
-        return True
 
 gate = TransactionGate()
 
-def poll_airlock():
-    """Non-blocking polling of the filesystem airlock."""
-    try:
-        # Check for Transaction Timeout
-        gate.check_timeout()
+def wait_for_depsgraph():
+    """Checks if the dependency graph is currently evaluating."""
+    # If Blender is calculating modifiers or physics, this will be busy
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    return False # Placeholder for a more complex 'is_evaluating' check if needed
 
-        if not os.path.exists(INBOX_PATH):
-            os.makedirs(INBOX_PATH, exist_ok=True)
-            
+def is_user_busy():
+    """Detects if the user is actively clicking or stroking."""
+    # Checks if interface is locked by a modal operator (like painting or moving)
+    return bpy.context.window_manager.is_interface_locked
+
+def poll_airlock(forced=False):
+    """Event-driven opcode dispatcher."""
+    try:
+        # --- USER INTENT GUARD ---
+        if is_user_busy():
+            # vibe_log("USER BUSY: Holding mutations...")
+            return 0.5
+
+        # --- DEPSGRAPH SENTINEL ---
+        # If Blender is busy 'compiling' modifiers, hold mutation
+        if wait_for_depsgraph():
+            return 0.1
+
+        start_watchdog()
+        gate.check_timeout()
+        if not os.path.exists(INBOX_PATH): return 0.5
+        
         files = [f for f in os.listdir(INBOX_PATH) if f.endswith('.json')]
-        if not files:
-            return 0.1 # High-frequency polling when idle
-            
+        if not files: return 0.5
+        
         files.sort()
-        f = files[0]
-        path = os.path.join(INBOX_PATH, f)
+        f = files[0]; path = os.path.join(INBOX_PATH, f)
         
         try:
             with open(path, 'r') as file:
                 data = json.load(file)
             
-            cmd_type = data.get('type')
+            opcode = data.get('type')
             action = data.get('action')
-            intent = data.get('intent', 'GENERAL')
-
+            
             # --- TRANSACTION GATE ---
-            if not gate.is_safe(cmd_type, action):
-                vibe_log(f"BLOCKED: Mutation attempted outside of transaction. Type: {cmd_type}, Action: {action}")
-                raise Exception("MUTATION_BLOCKED: Active transaction required for write operations.")
+            if opcode != 'system_op' and not gate.active:
+                raise Exception("UNAUTHORIZED_MUTATION: No transaction active.")
 
-            # Handle Transaction Ops
-            if cmd_type == 'system_op':
-                if action == 'begin_transaction':
-                    gate.begin()
-                elif action == 'commit_transaction':
-                    gate.commit(intent=intent)
-                elif action == 'rollback_transaction':
-                    gate.rollback()
+            # --- OPCODE DISPATCH ---
+            handler = OPCODE_MAP.get(opcode)
+            if handler:
+                if opcode == 'system_op':
+                    result = handler(data, gate)
+                else:
+                    result = handler(data)
+            else:
+                raise Exception(f"INVALID_OPCODE: {opcode}")
 
-            vibe_log(f"PROCESSING INTENT: {intent} (File: {f})")
-            
-            if data.get('type') == 'exec_script':
-                exec(data.get('script'), {'bpy': bpy, 'vibe_log': vibe_log})
-                
+            # SUCCESS RESPONSE
             res_file = os.path.join(OUTBOX_PATH, 'res_' + f)
-            temp_res = res_file + ".tmp"
-            
-            with open(temp_res, 'w') as out_f:
-                json.dump({'status': 'SUCCESS', 'intent': intent}, out_f)
-                out_f.flush()
-            os.rename(temp_res, res_file)
+            with open(res_file + ".tmp", 'w') as out_f:
+                json.dump({'status': 'SUCCESS', 'result': result}, out_f)
+            os.rename(res_file + ".tmp", res_file)
                 
         except Exception as e:
-            vibe_log(f'ERROR: {e}')
+            vibe_log(f'KERNEL_ERROR: {e}')
             res_file = os.path.join(OUTBOX_PATH, 'res_' + f)
-            temp_res = res_file + ".tmp"
-            with open(temp_res, 'w') as out_f:
+            with open(res_file + ".tmp", 'w') as out_f:
                 json.dump({'status': 'ERROR', 'message': str(e)}, out_f)
-                out_f.flush()
-            os.rename(temp_res, res_file)
+            os.rename(res_file + ".tmp", res_file)
         finally:
-            if os.path.exists(path):
-                os.remove(path)
+            if os.path.exists(path): os.remove(path)
                 
     except Exception as e:
-        vibe_log(f"CRITICAL AIRLOCK FAILURE: {e}")
-        
-    return 0.1 # Keep polling cadence
+        vibe_log(f"AIRLOCK_CRITICAL: {e}")
+    return 0.1

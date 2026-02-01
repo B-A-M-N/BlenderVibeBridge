@@ -16,6 +16,7 @@ It is a professional-grade intelligent interface that transforms Blender into a 
 | 🛡️ **Iron Box** | Zero-trust security via AST Auditing, Behavioral Circuit Breakers, and local binding. |
 | ⚛️ **Kernel Integrity** | Real-time invariant enforcement (No negative scales, no non-manifold geometry). |
 | 👻 **Ghost Audit** | Local-only forensic history via automatic Git checkpointing and LFS tracking. |
+| ⚡ **Reflex Arc** | 2-Agent architecture (Foreman + Operator) for non-blocking engine sync. |
 | 🏃 **Stable Motion** | Thread-safe main-loop dispatching via `bpy.app.timers` (No crashes). |
 | 🧠 **Epistemic Control** | Truth-reconciliation tools that prevent AI hallucinations about scene state. |
 
@@ -203,7 +204,12 @@ USE_BWRAP=true ./start_bridge.sh
      git lfs track "*.fbx" "*.mat" "*.png" "*.blend" "*.unity"
      git add .gitattributes && git commit -m "Initial Ghost Audit Setup"
      ```
-4. **Start Server**:
+4. **API Key Configuration**:
+   - To enable the **Reflex Arc** (fast script generation), set your API key in your terminal environment:
+     ```bash
+     export VIBE_API_KEY="your_gemini_flash_key"
+     ```
+5. **Start Server**:
    ```bash
    ./start_bridge.sh
    ```

@@ -160,12 +160,13 @@ def update_snapshot(bpy):
     # Deterministic sort
     objs = sorted(bpy.data.objects, key=lambda o: o.name)
     for obj in objs:
-        uuid = obj.get("uuid", "NO_UUID")
-        obj_info = {"name": obj.name, "type": obj.type, "uuid": uuid}
+        # Resolve identity by vibe_uuid (authoritative) or name (fallback)
+        v_uuid = obj.get("vibe_uuid", "NO_UUID")
+        obj_info = {"name": obj.name, "type": obj.type, "uuid": v_uuid}
         obj_list.append(obj_info)
         
-        # State Hashing
-        h.update(f"{obj.name}:{uuid}:{obj.location}".encode())
+        # State Hashing - include UUID to track identity drift
+        h.update(f"{obj.name}:{v_uuid}:{obj.location}".encode())
 
     SCENE_SNAPSHOT.update({
         "hash": h.hexdigest(),

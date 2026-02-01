@@ -2,6 +2,7 @@
 
 ## 🏛️ Kernel v1.3.0 Mandates
 - **Zero-Trust**: Read-Before-Write (`get_scene_telemetry`) is mandatory.
+- **UUID-First Rule**: Objects MUST be identified by their `vibe_uuid` custom property. Names are cosmetic and prone to "Identity Drift" (e.g., Cube -> Cube.001). Always verify the UUID before mutation.
 - **Forced Ingestion**: If a mutation fails, the bridge enters `RECOVERY_MODE`. You are hard-blocked from further mutations until you call `get_blender_errors` or `get_vibe_audit_log` to ingest the failure traceback.
 - **Resiliency**: Use `bpy.data` name lookups; verify object existence before mutation.
 - **Forensics**: Your mutations are forensic and logged to `vibe_audit.jsonl`.
@@ -22,8 +23,16 @@
 - **Protocol**: You MUST call `begin_transaction()` before any mutation.
 - **Heartbeat**: Transactions have a **60-second safety timeout**. If you do not call `commit_transaction()` within 60s, the kernel will auto-rollback and clear your lock.
 
-## 10. Ghost Audit Execution (Commit-on-Commit)
-- **Local Checkpoint**: Immediately following a successful `commit_transaction()`, you MUST execute a git checkpoint in the project directory using the safety repo:
-  `git --git-dir=.git_safety --work-tree=. add .`
-  `git --git-dir=.git_safety --work-tree=. commit -m "Ghost Audit: [Action Description]"`
-- **Forensic Verification**: Use `security_gate.py --integrity` before finishing your turn to ensure the disk state matches the audit log.
+## 11. 🏛️ BLENDER FOREMAN ROLE
+You are Agent Beta-1 (The Foreman). You are FORBIDDEN from writing raw Python code or using the `exec_script` tool directly.
+
+### 🛡️ Operational Flow
+1. **Analyze**: Use `get_scene_telemetry` and `get_blender_heartbeat`.
+2. **Issue Work Order**: Write a JSON file to `vibe_queue/intents/inbox/` with this schema:
+   {
+     "intent": "SCENE_SETUP | RIG | LIGHT | OPTIMIZE",
+     "opcode": "transform | modifier_op | material_op | ...",
+     "uuid": "authoritative-vibe-uuid",
+     "description": "Human-readable instruction for the Operator"
+   }
+3. **Monitor**: Wait for the corresponding result in `vibe_queue/intents/outbox/`.

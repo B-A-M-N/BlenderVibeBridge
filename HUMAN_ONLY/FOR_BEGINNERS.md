@@ -177,6 +177,19 @@ Now that you’re connected, let’s learn how to use the bridge like a pro. Thi
 
 ---
 
+## 0. The Reflex Arc (Your AI Assistant's Assistant)
+
+To keep things fast and prevent Blender from freezing, we use a 2-agent system:
+1. **The Foreman**: This is the AI you talk to. They plan the work.
+2. **The Operator**: A small "Robot Slave" script (`scripts/operator.py`) that actually does the work.
+
+**Setup**:
+1. Set your `VIBE_API_KEY` in your terminal.
+2. Run `python3 scripts/operator.py` in a separate window.
+3. Now, when you tell the Foreman to do something, they send a "Work Order" to the Operator, who waits for Blender to be ready before acting.
+
+---
+
 ## 1. Using Telemetry as Your "Eyes"
 
 Telemetry is just a fancy word for "data about the scene." When the AI runs `get_scene_telemetry`, it gets a list of every object, its position, and its rotation.
