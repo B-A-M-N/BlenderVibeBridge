@@ -1,12 +1,1 @@
-{
-  "status": "Ready",
-  "progress": 0,
-  "session_id": "reset-session",
-  "current_op": "Idle",
-  "host_fingerprint": "reset",
-  "governance_tier": "FULL",
-  "mutation_budget": 100,
-  "last_replenish": 1738224000,
-  "failure_count": 0,
-  "last_mutation_time": 0
-}
+{"status": "READY", "timestamp": 1769835802.938829, "session": "aaedf00b-06d5-47de-9e83-691844726e2b", "queue_size": 0}

@@ -20,7 +20,7 @@ VibeBridge is not a creative tool; it is a **Distributed Proof System** designed
 
 
 
-1.  **First Order: State Truth (Reality Anchoring)**: Prevents hallucinations and ghost state via hard hashes, handshakes, and monotonic heartbeats.
+1.  **First Order: State Truth (Reality Anchoring)**: Prevents hallucinations and ghost state via hard hashes, handshakes, and monotonic heartbeats. This is anchored to the disk via the **Ghost Audit**—a local-only Git system that provides a cryptographically verifiable history of every asset change.
 
 2.  **Second Order: Causal Correctness (Behavioral Sanity)**: Prevents thrashing and infinite retry loops via idempotency keys, entropy budgets, and proof-of-work commits.
 
@@ -42,6 +42,9 @@ VibeBridge is not a creative tool; it is a **Distributed Proof System** designed
 
 *   **The Technical Ceiling**: The AI is forbidden to "fix" invariance violations. Recovery is restricted to the machine kernel; the AI's role is strictly limited to explanation, summary, and escalation.
 
-
+## 📁 Directory Authority Mandate
+This project uses localized scoping to protect the Kernel. 
+*   **Explicit Supercession**: Instructions within a subdirectory (e.g., `.gemini`, `.cursorrules`) ALWAYS supersede root-level guidelines.
+*   **Mandatory Discovery**: You MUST read the local rule file before proposing mutations in a specific path.
 
 **BlenderVibeBridge** transforms Blender into a high-integrity, governed environment where intelligence is regulated and every action is forensic.

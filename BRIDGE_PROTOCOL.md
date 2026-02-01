@@ -27,3 +27,10 @@ Strict adherence to [LIFECYCLE_DISCIPLINE.md](./LIFECYCLE_DISCIPLINE.md) is requ
 
 ## 7. Environment & Unit Validation
 Agents MUST normalize all transform data to SI Meters before transmission. The Bridge Kernel will reject any payload that violates the declared dependency manifest or unit normalization contract.
+
+## 8. Ghost Audit Protocol (Forensic Sync)
+To prevent irreversible data loss and provide high-fidelity session history, the bridge enforces the **Ghost Audit Protocol**:
+- **Local Isolation**: Every project folder SHOULD be initialized as a local-only Git repository.
+- **Commit-on-Commit**: Every successful `commit_transaction` within Blender triggers an automatic `git add . && git commit` in the project directory.
+- **LFS Tracking**: Large assets (.fbx, .blend, .png) MUST be tracked via Git LFS to maintain repository performance.
+- **Integrity Gating**: The Security Gate (`--integrity`) verifies that the project's disk state is clean before finalizing any AI task.

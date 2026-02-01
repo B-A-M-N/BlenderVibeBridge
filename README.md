@@ -15,6 +15,7 @@ It is a professional-grade intelligent interface that transforms Blender into a 
 | :--- | :--- |
 | 🛡️ **Iron Box** | Zero-trust security via AST Auditing, Behavioral Circuit Breakers, and local binding. |
 | ⚛️ **Kernel Integrity** | Real-time invariant enforcement (No negative scales, no non-manifold geometry). |
+| 👻 **Ghost Audit** | Local-only forensic history via automatic Git checkpointing and LFS tracking. |
 | 🏃 **Stable Motion** | Thread-safe main-loop dispatching via `bpy.app.timers` (No crashes). |
 | 🧠 **Epistemic Control** | Truth-reconciliation tools that prevent AI hallucinations about scene state. |
 
@@ -24,11 +25,16 @@ It is a professional-grade intelligent interface that transforms Blender into a 
 *   **3D Content Creators** who want to use AI without risking scene corruption.
 
 ## ⚡ Quick Start (Usage at a Glance)
-1.  **Install Addon**: Zip `blender_addon/vibe_bridge` and install via Blender Preferences.
-2.  **Enable**: Check the box for "System: BlenderVibeBridge".
-3.  **Connect AI**: Point your MCP-compatible AI tool (Goose, Claude Desktop) to `mcp-server/server.py`.
-4.  **Run Server**: Execute `./start_bridge.sh`.
+...
 5.  **Prompt**: Ask your AI to "Check my Blender scene" to verify the handshake.
+
+---
+
+## 🤖 AI Operational Protocol (MANDATORY)
+**This repository is a Governed Geometry Kernel.** To maintain bridge stability, AI agents MUST follow the **Directory Authority Mandate**:
+1.  **Local Laws Override**: Instructions in subdirectories (e.g., `blender_addon/.gemini`) SUPERSEDE root-level rules.
+2.  **Path Discovery**: Before modifying code in any subdirectory, read the local `.gemini` or `README.md` to reconcile invariants.
+3.  **Proof of Work**: All commits require a `rationale_check` matching the current `scene_hash`. See `commit_transaction` documentation.
 
 ---
 
@@ -188,11 +194,20 @@ USE_BWRAP=true ./start_bridge.sh
    - Zip the `blender_addon/vibe_bridge` directory.
    - Install the `.zip` via Blender's **Edit > Preferences > Add-ons > Install**.
    - Enable **BlenderVibeBridge**.
-3. **Start Server**:
+3. **Local Project Setup (Ghost Audit)**:
+   - To enable automatic forensic logging and easy reverts, initialize Git in your project folder:
+     ```bash
+     cd /path/to/your/project
+     git init
+     git lfs install
+     git lfs track "*.fbx" "*.mat" "*.png" "*.blend" "*.unity"
+     git add .gitattributes && git commit -m "Initial Ghost Audit Setup"
+     ```
+4. **Start Server**:
    ```bash
    ./start_bridge.sh
    ```
-4. **Build**: Use natural language to orchestrate your production pipeline.
+5. **Build**: Use natural language to orchestrate your production pipeline.
 
 ---
 

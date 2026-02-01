@@ -1,0 +1,75 @@
+import sys, os; sys.path.append(os.path.dirname(__file__))
+# BlenderVibeBridge: Dual-License & Maintenance Agreement (v1.2)
+# Copyright (C) 2026 B-A-M-N (The "Author")
+#
+# This software is distributed under a Dual-Licensing Model:
+# 1. THE OPEN-SOURCE PATH: GNU AGPLv3 (see LICENSE for details)
+# 2. THE COMMERCIAL PATH: "WORK-OR-PAY" MODEL
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+
+import bpy
+
+def apply_palette():
+    # 1. Ensure all EXTO objects are visible and clean
+    for obj in bpy.data.objects:
+        if obj.name.startswith("EXTO_"):
+            obj.hide_viewport = False
+            obj.hide_render = False
+            for mod in list(obj.modifiers):
+                if "Vibe" in mod.name:
+                    obj.modifiers.remove(mod)
+
+    # 2. Palette Definitions
+    BLOOD_RED = (0.3, 0.0, 0.0, 1.0)
+    WHITE = (1.0, 1.0, 1.0, 1.0)
+    DEEP_BLACK = (0.01, 0.0, 0.0, 1.0) # Slightly reddish black
+    
+    # 3. Material Application
+    for mat in bpy.data.materials:
+        if not mat.name.startswith("EXTO_Mat_"): continue
+        
+        mat.use_nodes = True
+        nodes = mat.node_tree.nodes
+        bsdf = next((n for n in nodes if n.type == "BSDF_PRINCIPLED"), None)
+        
+        if not bsdf: continue
+        
+        name_lower = mat.name.lower()
+        
+        # Detect Textures
+        has_texture = False
+        if bsdf.inputs["Base Color"].is_linked:
+            link = bsdf.inputs["Base Color"].links[0]
+            if link.from_node.type == "TEX_IMAGE":
+                has_texture = True
+        
+        # Apply Rules
+        if has_texture:
+            bsdf.inputs["Base Color"].default_value = WHITE
+        elif any(k in name_lower for k in ["metal", "chain", "buckle", "hardware", "strap", "iron", "steel"]):
+            bsdf.inputs["Base Color"].default_value = BLOOD_RED
+            bsdf.inputs["Metallic"].default_value = 1.0
+            bsdf.inputs["Roughness"].default_value = 0.2
+        elif any(k in name_lower for k in ["skin", "head", "body", "ears", "face"]):
+            # If no texture, but it's skin, maybe it should be a base skin color? 
+            # But the user wants "Blood Moon" palette. 
+            # If no texture, we'll go with white or a very pale grey.
+            bsdf.inputs["Base Color"].default_value = WHITE
+        elif "hair" in name_lower or "tails" in name_lower:
+            bsdf.inputs["Base Color"].default_value = DEEP_BLACK
+        elif "eyes" in name_lower:
+            bsdf.inputs["Base Color"].default_value = BLOOD_RED
+            bsdf.inputs["Emission Strength"].default_value = 2.0
+            # Link color to emission if not already
+            if not bsdf.inputs["Emission Color"].is_linked:
+                bsdf.inputs["Emission Color"].default_value = BLOOD_RED
+        else:
+            bsdf.inputs["Base Color"].default_value = DEEP_BLACK
+
+    vibe_log("BLOOD_MOON_PALETTE_APPLIED: Visibility restored, modifiers cleaned, and colors normalized.")
+
+apply_palette()

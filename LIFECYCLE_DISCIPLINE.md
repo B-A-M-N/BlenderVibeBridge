@@ -99,79 +99,48 @@
 
 ## 13. AI FAILURE BOUNDARY
 
-
-
 1. **Failure Thresholds**: Maintain a persistent failure counter.
-
 2. **Circuit Breakers**: Stop all automation and notify the user when the threshold is reached.
-
 3. **No Silent Retries**: Never attempt to "fix" a failure with the same AI logic that caused it.
-
-
 
 ---
 
-
-
 ## 14. LOG-DRIVEN GOVERNANCE (LOG-AS-STATE)
 
-
-
 **Rule: No state-changing operation may execute without explicit log consultation and acknowledgment.**
-
-
 
 ### FLOW L1 — LOG INDEXING (BOOT TIME)
 
 1. On attach / boot:
-
    * Load last **N** log entries.
-
    * Build in-memory index: `UUID → last_known_state`, `UUID → last_error`, `operation → last_outcome`.
-
 2. Validate log schema. Abort automation if logs are unreadable.
-
-
 
 ### FLOW L2 — LOG CONSULTATION GATE (PRE-ACTION)
 
 3. **Pre-Action Query**: Before every mutation, query log index for prior failures on the same UUID, recent crash flags, or incomplete transactions.
-
 4. **Behavioral Adjustment**: Adjust behavior (retry, degrade, block) based on findings. Log the consultation.
-
-
 
 ### FLOW L3 — LOG-DRIVEN DECISION OVERRIDE
 
 5. **Override Authority**: Logs outrank inference. If logs indicate repeated failure or identity ambiguity, override the current plan and enter safe mode.
 
-
-
 ### FLOW L4 — TRANSACTION-BOUND LOGGING
 
 6. **Transaction Lifecycle**: Every transaction MUST log `BEGIN`, `STEP(S)`, and `COMMIT | ROLLBACK`.
-
 7. **Boot Recovery**: On boot, scan for `BEGIN` without `COMMIT` and auto-rollback or quarantine the state.
 
-
-
-### FLOW L5 — LOG-AS-MEMORY PROMOTION
+### FLOW L5 — LOG-DRIVEN MEMORY PROMOTION
 
 8. **Operational Memory**: Promote logs regarding known bad assets or unstable sequences into hard constraints in operational memory.
-
-
 
 ### FLOW L6 — FAILURE ESCALATION VIA LOGS
 
 9. **Granular Escalation**: Use failure counters in logs to disable specific features rather than the entire system where possible.
 
-
-
 ### FLOW L7 — POST-ACTION LOG VALIDATION
 
 10. **Write-Verification**: After an operation, re-read the log entry just written to confirm it exists and matches the expected state.
-
-
 
 ## 14. LOG-DRIVEN GOVERNANCE (LOG-AS-STATE)
 ...
@@ -185,8 +154,8 @@
 1. **Event Debouncing**: Thottle event listeners to prevent infinite loops and editor hangs.
 2. **Knowledge Base Lookup**: Consult [BLENDER_FREEZE_KNOWLEDGE_BASE.md](./BLENDER_FREEZE_KNOWLEDGE_BASE.md) to predict and mitigate specific freeze vectors before operation.
 3. **Hard Limits**: Enforce `Max operations per tick` and `Max scan frequency`.
-3. **Yield Loops**: Long-running scans must yield execution to keep the Blender UI responsive.
-4. **Stale State Guard**: Introduce sequence numbers to detect if the AI is acting on state that changed during a multi-frame calculation.
+4. **Yield Loops**: Long-running scans must yield execution to keep the Blender UI responsive.
+5. **Stale State Guard**: Introduce sequence numbers to detect if the AI is acting on state that changed during a multi-frame calculation.
 
 ---
 
@@ -333,40 +302,34 @@
 
 ---
 
-## REQUIRED LOG STRUCTURE (MINIMUM)
+## 30. GHOST AUDIT (Disk-Level Forensic Anchor)
 
+To ensure absolute state recovery even in the event of a total kernel crash or memory corruption, the bridge utilizes the **Ghost Audit Protocol**:
 
-
-```
-
-timestamp
-
-process_id
-
-session_id
-
-operation_id
-
-uuid(s)
-
-phase (BEGIN | STEP | COMMIT | ROLLBACK)
-
-outcome
-
-error_code
-
-schema_version
-
-```
-
-
+1.  **Local-Only Git Anchor**: Project directories MUST be initialized with a local Git repository (`git init`). This repository is for forensic tracking only and HAS NO REMOTE (it is never pushed to external servers).
+2.  **LFS Binary Safety**: All large binary assets (.fbx, .blend, .png) MUST be tracked via Git LFS to prevent repository bloat and ensure fast reverts.
+3.  **The "Commit-on-Commit" Rule**: Every successful `commit_transaction` within the Blender Kernel triggers an automatic disk-level checkpoint (`git add . && git commit`).
+4.  **Forensic Reversion**: If an AI operation results in "Trashing" (corrupting files on disk), the human operator can instantly restore the previous known-good state via `git checkout .`.
+5.  **Integrity Verification**: The Security Gate (`--integrity`) cross-references the Git status with the `vibe_audit.jsonl`. Any uncommitted change in the Assets directory is flagged as a protocol violation.
 
 ---
 
+## REQUIRED LOG STRUCTURE (MINIMUM)
 
+```
+timestamp
+process_id
+session_id
+operation_id
+uuid(s)
+phase (BEGIN | STEP | COMMIT | ROLLBACK)
+outcome
+error_code
+schema_version
+```
+
+---
 
 # ABSOLUTE META-RULE
-
-
 
 > **Identity is not enough — lifecycle discipline is what keeps systems alive.**

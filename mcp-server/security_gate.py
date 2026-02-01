@@ -15,6 +15,7 @@ import sys
 import os
 import hashlib
 import json
+import time
 
 class SecurityGate:
     """
@@ -22,6 +23,8 @@ class SecurityGate:
     """
     
     TRUSTED_FILE = "trusted_signatures.json"
+    AUDIT_LOG_PATH = "/home/bamn/BlenderVibeBridge/logs/vibe_audit.jsonl"
+    ASSETS_DIR = "/home/bamn/BlenderVibeBridge/production_vault/avatar_assets/temp_exto_extraction/_Extracted/Assets"
 
     @classmethod
     def _get_content_hash(cls, content):
@@ -61,6 +64,59 @@ class SecurityGate:
         with open(cls.TRUSTED_FILE, "w") as f:
             json.dump(trusted, f, indent=2)
         return True
+
+    @classmethod
+    def check_integrity(cls):
+        """
+        Passive Integrity Auditor:
+        Cross-references filesystem modification times with the audit log.
+        Flags files modified recently that are missing from the log.
+        Also verifies that the local Ghost Audit repository is clean.
+        """
+        violations = []
+        
+        # 1. Audit Log Parity Check
+        if not os.path.exists(cls.AUDIT_LOG_PATH):
+            logged_files = set()
+        else:
+            logged_files = set()
+            try:
+                with open(cls.AUDIT_LOG_PATH, "r") as f:
+                    for line in f:
+                        entry = json.loads(line)
+                        data = entry.get("request_data", {})
+                        if data and "filepath" in data:
+                            logged_files.add(os.path.abspath(data["filepath"]))
+            except Exception as e:
+                violations.append(f"Integrity Auditor Error: Failed to parse audit log: {e}")
+
+        if os.path.exists(cls.ASSETS_DIR):
+            now = time.time()
+            for root, dirs, files in os.walk(cls.ASSETS_DIR):
+                for file in files:
+                    if file.endswith('.meta'): continue
+                    full_path = os.path.join(root, file)
+                    abs_path = os.path.abspath(full_path)
+                    try:
+                        mtime = os.path.getmtime(full_path)
+                        if now - mtime < 600:
+                            if abs_path not in logged_files:
+                                violations.append(f"Constraint Violation: Asset '{full_path}' was modified but is missing from the audit log.")
+                    except: continue
+
+        # 2. Ghost Audit Git Check (Commit-on-Commit Rule)
+        project_path = "/home/bamn/ALCOM/Projects/BAMN-EXTO"
+        if os.path.exists(os.path.join(project_path, ".git")):
+            try:
+                import subprocess
+                # Check for uncommitted changes
+                status = subprocess.check_output(["git", "-C", project_path, "status", "--porcelain"], stderr=subprocess.STDOUT).decode()
+                if status.strip():
+                    violations.append(f"Ghost Audit Violation: Project '{project_path}' has uncommitted changes. You MUST checkpoint your work before finishing.")
+            except Exception as e:
+                violations.append(f"Ghost Audit Error: Failed to check git status: {e}")
+        
+        return violations
 
     PYTHON_FORBIDDEN_MODULES = {
         'os', 'subprocess', 'shlex', 'shutil', 'socket', 'posix', 'pty',
@@ -309,23 +365,71 @@ class SecurityGate:
         return errors
 
 if __name__ == "__main__":
+
     import argparse
+
     parser = argparse.ArgumentParser(description="BlenderVibeBridge Security Gate")
-    parser.add_argument("file", help="File to audit")
+
+    parser.add_argument("file", nargs='?', help="File to audit")
+
     parser.add_argument("--trust", action="store_true", help="Manually trust this file")
+
+    parser.add_argument("--integrity", action="store_true", help="Run Passive Integrity Audit on Assets")
+
     args = parser.parse_args()
+
     
-    if not os.path.exists(args.file): sys.exit(1)
-    with open(args.file, 'r') as f: content = f.read()
-    if args.trust:
-        SecurityGate.trust_content(content)
-        sys.exit(0)
-        
-    ext = os.path.splitext(args.file)[1]
-    issues = SecurityGate.check_python(content) if ext == '.py' else []
-    if issues:
-        print("\n".join(issues))
+
+    if args.integrity:
+
+        violations = SecurityGate.check_integrity()
+
+        if violations:
+
+            print("\n".join(violations))
+
+            sys.exit(1)
+
+        else:
+
+            print("✅ Integrity Audit Passed: No unlogged modifications detected.")
+
+            sys.exit(0)
+
+
+
+    if not args.file:
+
+        parser.print_help()
+
         sys.exit(1)
+
+
+
+    if not os.path.exists(args.file): sys.exit(1)
+
+    with open(args.file, 'r') as f: content = f.read()
+
+    if args.trust:
+
+        SecurityGate.trust_content(content)
+
+        sys.exit(0)
+
+        
+
+    ext = os.path.splitext(args.file)[1]
+
+    issues = SecurityGate.check_python(content) if ext == '.py' else []
+
+    if issues:
+
+        print("\n".join(issues))
+
+        sys.exit(1)
+
     else:
+
         print("✅ Security Audit Passed.")
+
         sys.exit(0)

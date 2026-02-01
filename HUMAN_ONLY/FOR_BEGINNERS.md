@@ -109,6 +109,23 @@ Make sure you have:
 
 ---
 
+## Step 2.5: Initialize Ghost Audit (Highly Recommended)
+
+To ensure you can always "rewind" time if the AI makes a mistake, you should set up a local **Ghost Audit** log. This creates a local-only history of every change on your computer.
+
+1. Open your terminal or command prompt.
+2. Navigate to your project folder (where your `.blend` file lives).
+3. Run these commands:
+   ```bash
+   git init
+   git lfs install
+   git lfs track "*.fbx" "*.mat" "*.png" "*.blend" "*.unity"
+   git add .gitattributes && git commit -m "Initial Ghost Audit Setup"
+   ```
+   *Note: This is a local-only repository. Your files will NOT be uploaded to the internet unless you manually add a remote.*
+
+---
+
 ## Step 3: Connect the AI to the Bridge
 
 Your AI talks to Blender using a small program called an "MCP Server."

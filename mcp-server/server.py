@@ -148,11 +148,20 @@ def blender_request(method, path, data=None, is_mutation=False):
         payload["id"] = cmd_id
         if SESSION_ID: payload["vibe_session_id"] = SESSION_ID
         
-        # 1. Write to Inbox
+        # 1. Atomic Write to Inbox
         os.makedirs(INBOX_PATH, exist_ok=True)
         inbox_file = os.path.join(INBOX_PATH, f"{cmd_id}.json")
-        with open(inbox_file, "w") as f:
-            json.dump(payload, f)
+        temp_file = inbox_file + ".tmp"
+        
+        try:
+            with open(temp_file, "w") as f:
+                json.dump(payload, f)
+                f.flush()
+                os.fsync(f.fileno()) # Ensure data is on disk
+            os.rename(temp_file, inbox_file) # Atomic OS operation
+        except Exception as e:
+            if os.path.exists(temp_file): os.remove(temp_file)
+            return {"error": f"Airlock Write Failure: {str(e)}"}
             
         # 2. Poll Outbox
         os.makedirs(OUTBOX_PATH, exist_ok=True)
@@ -230,10 +239,10 @@ def begin_transaction() -> str:
     return str(blender_request("POST", "/command", data={"type": "system_op", "action": "begin_transaction", "intent": "GENERAL"}, is_mutation=True))
 
 @mcp.tool()
-def commit_transaction(rationale_check: str) -> str:
+def commit_transaction(rationale_check: str, intent: str = "GENERAL") -> str:
     """THE ARCHIVIST: Finalizes the current multi-command transaction.
-    HARD GATE: Requires a JSON rationale_check containing the current 'scene_hash' 
-    to prove the AI has processed the force-fed context."""
+    HARD GATE: Requires a JSON rationale_check containing the current 'scene_hash'.
+    NOTE: Detailed technical_rationale is only MANDATORY for 'RIG', 'CLEANUP', or 'SCENE_SETUP'."""
     try:
         check = json.loads(rationale_check)
         if "scene_hash" not in check:
@@ -243,8 +252,13 @@ def commit_transaction(rationale_check: str) -> str:
         current_state = blender_request("GET", "/blender/scene_state")
         if current_state.get("scene_hash") != check["scene_hash"]:
             return f"Error: Hash Mismatch. Action blocked. Expected {current_state.get('scene_hash')}, got {check['scene_hash']}."
+        
+        # Rationale Depth Enforcement
+        high_impact = intent.upper() in ["RIG", "CLEANUP", "SCENE_SETUP", "OPTIMIZE"]
+        if high_impact and (len(check.get("technical_rationale", "")) < 20):
+            return f"Error: Insufficient Rationale. Intent '{intent}' requires a detailed technical explanation (>20 chars)."
             
-        return str(blender_request("POST", "/command", data={"type": "system_op", "action": "commit_transaction", "intent": "GENERAL", "rationale": check}, is_mutation=True))
+        return str(blender_request("POST", "/command", data={"type": "system_op", "action": "commit_transaction", "intent": intent.upper(), "rationale": check}, is_mutation=True))
     except Exception as e:
         return f"Error processing Hard Gate: {str(e)}"
 
@@ -732,6 +746,96 @@ def get_state_hash() -> str:
 
 @mcp.tool()
 def get_wal_tail(lines: int = 20) -> str:
+    """Retrieves the tail of the Write-Ahead Log (Audit Log)."""
+    return get_vibe_audit_log(lines)
+
+@mcp.tool()
+def stabilize_and_start() -> str:
+    """THE BOOTSTRAP: Automates the 'Adversarial Pre-flight' -> 'Fix' -> 'Verify' loop.
+    Returns a single 'READY' status if successful, or a specific error if manual intervention is needed.
+    Use this at the start of every session."""
+    import psutil
+    import socket
+    
+    issues = []
+    # 1. Kill Zombies
+    for proc in psutil.process_iter(['pid', 'name']):
+        if proc.info['name'] and "blender" in proc.info['name'].lower():
+            try:
+                if proc.status() in (psutil.STATUS_ZOMBIE, psutil.STATUS_STOPPED):
+                    psutil.Process(proc.info['pid']).kill()
+            except: pass
+            
+    # 2. Clear Port 22000
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(("127.0.0.1", 22000)) == 0:
+                 # Only kill if heartbeat is stale
+                 health_res = check_heartbeat()
+                 is_stale = "Error" in health_res or "missing" in health_res
+                 if not is_stale:
+                     try:
+                         h = json.loads(health_res)
+                         if h.get("heartbeat_age_seconds", 99) > 10: is_stale = True
+                     except: is_stale = True
+                 
+                 if is_stale:
+                    for proc in psutil.process_iter(['pid', 'connections']):
+                        try:
+                            for conn in proc.info.get('connections', []):
+                                if conn.laddr.port == 22000:
+                                    psutil.Process(proc.info['pid']).kill()
+                        except: continue
+    except: pass
+    
+    # 3. Verify Airlock
+    os.makedirs(INBOX_PATH, exist_ok=True)
+    
+    return "[SYSTEM: ONLINE] Zombies Killed, Ports Cleared, Airlock Ready."
+
+@mcp.tool()
+def get_bridge_pulse() -> str:
+    """THE PULSE: Returns a 1-line system status for high-efficiency monitoring.
+    Format: [KERNEL: <Health> | IPC: <State> | HASH: <ShortHash> | ENTROPY: <Used>/<Budget>]"""
+    # Kernel
+    health_res = check_heartbeat()
+    kernel_status = "READY"
+    if "Error" in health_res or "missing" in health_res: kernel_status = "OFFLINE"
+    
+    # IPC
+    ipc_status = "IDLE"
+    if os.path.exists(INBOX_PATH) and os.listdir(INBOX_PATH): ipc_status = "BUSY"
+    
+    # Hash
+    shash = get_state_hash()
+    short = shash[:8] if shash != "UNKNOWN" else "UNK"
+    
+    return f"[KERNEL: {kernel_status} | IPC: {ipc_status} | HASH: {short} | ENTROPY: {ENTROPY_USED}/{ENTROPY_BUDGET}]"
+
+@mcp.tool()
+def set_thought_marker(status: str) -> str:
+    """THE SIGNAL: Writes a status message to 'metadata/bridge_activity.txt'.
+    Use this to tell the human what you are doing during long operations.
+    Example: '[AI: OPTIMIZING_MESH_TOPOLOGY]'"""
+    path = "/home/bamn/BlenderVibeBridge/metadata/bridge_activity.txt"
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f: f.write(status)
+        return f"Status set to: {status}"
+    except Exception as e: return f"Error: {e}"
+
+@mcp.tool()
+def verify_identity_parity(names: str) -> str:
+    """THE CHECKPOINT: Verifies if a list of object names (comma-separated) exist in the current scene.
+    Returns: 'Object_A: FOUND, Object_B: LOST'."""
+    try:
+        n_list = [n.strip() for n in names.split(",")]
+        script = f"result = {{n: ('FOUND' if n in bpy.data.objects else 'LOST') for n in {str(n_list)}}}"
+        res = blender_request("POST", "/command", data={"type": "exec_script", "script": script, "intent": "AUDIT"}, is_mutation=True)
+        if isinstance(res, dict) and "result" in res:
+             return ", ".join([f"{k}: {v}" for k,v in res["result"].items()])
+        return f"Error: {res}"
+    except Exception as e: return f"Error: {e}"
 
 @mcp.tool()
 def force_restart_blender_bridge() -> str:

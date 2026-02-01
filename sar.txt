@@ -1,0 +1,29 @@
+import sys, os; sys.path.append(os.path.dirname(__file__))
+# BlenderVibeBridge: Dual-License & Maintenance Agreement (v1.2)
+# Copyright (C) 2026 B-A-M-N (The "Author")
+#
+# This software is distributed under a Dual-Licensing Model:
+# 1. THE OPEN-SOURCE PATH: GNU AGPLv3 (see LICENSE for details)
+# 2. THE COMMERCIAL PATH: "WORK-OR-PAY" MODEL
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+
+# Recipe: Set Avatar to Red
+# Usage: Use sandbox_modify_object or exec_script with this content.
+
+import bpy
+
+def set_red():
+    for mat in bpy.data.materials:
+        if "EXTO" in mat.name:
+            if mat.use_nodes:
+                nodes = mat.node_tree.nodes
+                bsdf = next((n for n in nodes if n.type == 'BSDF_PRINCIPLED'), None)
+                if bsdf:
+                    bsdf.inputs['Base Color'].default_value = (1, 0, 0, 1)
+                    vibe_log(f"Applied Red to {mat.name}")
+
+set_red()
