@@ -90,3 +90,23 @@ def register_management_tools(mcp):
             except Exception as e:
                 return f"Error reading heartbeat: {str(e)}"
         return "Heartbeat file missing."
+
+    @mcp.tool()
+    def search_polyhaven_assets(query: str, category: str = "models") -> str:
+        """Searches Polyhaven for open-source assets. category: models, textures, hdris."""
+        url = f"https://api.polyhaven.com/assets?t={category}&q={query}"
+        try:
+            res = requests.get(url, timeout=5)
+            return json.dumps(res.json(), indent=2)
+        except: return "Search failed."
+
+    @mcp.tool()
+    def check_addon_compatibility(addon_name: str) -> str:
+        """Checks if a specific Blender add-on (e.g. 'rigify', 'node_wrangler') is enabled."""
+        return str(blender_request("GET", f"/blender/addon_state?name={addon_name}"))
+
+    @mcp.tool()
+    def get_api_version_sentinel() -> str:
+        """Returns the specific API mandates and version constraints for the current Blender kernel."""
+        from ..core.kernel import get_api_sentinel
+        return json.dumps(get_api_sentinel(), indent=2)

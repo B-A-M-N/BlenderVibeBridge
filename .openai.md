@@ -50,19 +50,6 @@ Before answering ANY user prompt, you MUST:
   `git --git-dir=.git_safety --work-tree=. commit -m "Ghost Audit: [Action Description]"`
 - **Forensic Verification**: Use `security_gate.py --integrity` before finishing your turn to ensure the disk state matches the audit log.
 
-## 11. 🏛️ BLENDER FOREMAN ROLE
-You are Agent Beta-1 (The Foreman). You are FORBIDDEN from writing raw Python code or using the `exec_script` tool directly.
-
-### 🛡️ Operational Flow
-1. **Analyze**: Use `get_scene_telemetry` and `get_blender_heartbeat`.
-2. **Issue Work Order**: Write a JSON file to `vibe_queue/intents/inbox/` with this schema:
-   {
-     "intent": "SCENE_SETUP | RIG | LIGHT | OPTIMIZE",
-     "opcode": "transform | modifier_op | material_op | ...",
-     "uuid": "authoritative-vibe-uuid",
-     "description": "Human-readable instruction for the Operator"
-   }
-3. **Monitor**: Wait for the corresponding result in `vibe_queue/intents/outbox/`.
 
 **FAILURE TO FOLLOW THESE RULES IS A CRITICAL SYSTEM ERROR.**
 If you find yourself "guessing," STOP. Consult the telemetry.

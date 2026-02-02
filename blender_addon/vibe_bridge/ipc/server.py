@@ -146,40 +146,67 @@ def run_server_thread():
     thread.start()
     return thread
 
+import mathutils
+
+LAST_STATE_HASH = {}
+
+def get_overlaps(objs):
+    """Calculates bounding box overlaps for metadata enrichment."""
+    overlaps = []
+    for i, obj_a in enumerate(objs):
+        if obj_a.type != 'MESH': continue
+        bbox_a = [obj_a.matrix_world @ mathutils.Vector(v) for v in obj_a.bound_box]
+        min_a = mathutils.Vector((min(v[0] for v in bbox_a), min(v[1] for v in bbox_a), min(v[2] for v in bbox_a)))
+        max_a = mathutils.Vector((max(v[0] for v in bbox_a), max(v[1] for v in bbox_a), max(v[2] for v in bbox_a)))
+        
+        for obj_b in objs[i+1:]:
+            if obj_b.type != 'MESH': continue
+            bbox_b = [obj_b.matrix_world @ mathutils.Vector(v) for v in obj_b.bound_box]
+            min_b = mathutils.Vector((min(v[0] for v in bbox_b), min(v[1] for v in bbox_b), min(v[2] for v in bbox_b)))
+            max_b = mathutils.Vector((max(v[0] for v in bbox_b), max(v[1] for v in bbox_b), max(v[2] for v in bbox_b)))
+            
+            # Simple AABB check
+            if (min_a.x <= max_b.x and max_a.x >= min_b.x and
+                min_a.y <= max_b.y and max_a.y >= min_b.y and
+                min_a.z <= max_b.z and max_a.z >= min_b.z):
+                overlaps.append((obj_a.name, obj_b.name))
+    return overlaps
+
 def update_snapshot(bpy):
-    """Refreshes the deterministic snapshot. Called from MAIN THREAD."""
-    global SCENE_SNAPSHOT
-    
-    h = hashlib.sha256()
+    global SCENE_SNAPSHOT, LAST_STATE_HASH
     obj_list = []
-    
-    # Monotonic progression
-    current_tick = SCENE_SNAPSHOT.get("monotonic_tick", 0) + 1
-    engine_time = int(time.perf_counter() * 1000)
+    diff_list = []
+    h = hashlib.sha256()
     
     # Deterministic sort
     objs = sorted(bpy.data.objects, key=lambda o: o.name)
     for obj in objs:
-        # Resolve identity by vibe_uuid (authoritative) or name (fallback)
         v_uuid = obj.get("vibe_uuid", "NO_UUID")
-        obj_info = {"name": obj.name, "type": obj.type, "uuid": v_uuid}
-        obj_list.append(obj_info)
+        # Generate hash for this specific object's state
+        obj_hash = hashlib.sha256(f"{obj.name}:{v_uuid}:{obj.location}:{obj.rotation_euler}:{obj.scale}".encode()).hexdigest()
         
-        # State Hashing - include UUID to track identity drift
-        h.update(f"{obj.name}:{v_uuid}:{obj.location}".encode())
+        obj_info = {
+            "name": obj.name, 
+            "type": obj.type, 
+            "uuid": v_uuid, 
+            "loc": list(obj.location),
+            "rot": list(obj.rotation_euler),
+            "scale": list(obj.scale)
+        }
+        
+        # Differential logic: Only add to diff_list if state changed
+        if LAST_STATE_HASH.get(v_uuid) != obj_hash:
+            diff_list.append(obj_info)
+            LAST_STATE_HASH[v_uuid] = obj_hash
+            
+        obj_list.append(obj_info)
+        h.update(obj_hash.encode())
 
     SCENE_SNAPSHOT.update({
         "hash": h.hexdigest(),
         "objects": obj_list,
-        "object_count": len(bpy.data.objects),
-        "meshes": len(bpy.data.meshes),
-        "armatures": len(bpy.data.armatures),
-        "materials": len(bpy.data.materials),
-        "filepath": bpy.data.filepath,
-        "is_dirty": bpy.data.is_dirty,
-        "mode": str(bpy.context.mode) if bpy.context else "UNKNOWN",
-        "active_object": bpy.context.active_object.name if bpy.context and bpy.context.active_object else None,
-        "timestamp": time.time(),
-        "engine_time_ms": engine_time,
-        "monotonic_tick": current_tick
+        "dirty_objects": diff_list,
+        "overlaps": get_overlaps(objs),
+        "blender_version": list(bpy.app.version),
+        "timestamp": time.time()
     })

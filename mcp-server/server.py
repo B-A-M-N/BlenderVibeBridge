@@ -17,6 +17,7 @@ from tools.management import register_management_tools
 from tools.telemetry import register_telemetry_tools
 from tools.operations import register_operation_tools
 from tools.infrastructure import register_infrastructure_tools
+from tools.orchestration import register_orchestration_tools
 
 # Initialize Logger
 logger = setup_vibe_logging()
@@ -29,6 +30,7 @@ register_management_tools(mcp)
 register_telemetry_tools(mcp)
 register_operation_tools(mcp)
 register_infrastructure_tools(mcp)
+register_orchestration_tools(mcp)
 
 if __name__ == "__main__":
     logger.info("BlenderVibeBridge Modular Kernel Starting...")

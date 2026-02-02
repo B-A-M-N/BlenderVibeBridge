@@ -91,16 +91,23 @@ def is_user_busy():
     # Checks if interface is locked by a modal operator (like painting or moving)
     return bpy.context.window_manager.is_interface_locked
 
+def check_manual_approval():
+    """Checks if the human has pressed APPROVE/REJECT on the Vibe Panel."""
+    approval_path = "/home/bamn/BlenderVibeBridge/vibe_queue/kernel/approval.txt"
+    if not os.path.exists(approval_path): return "WAITING"
+    with open(approval_path, "r") as f:
+        res = f.read().strip()
+    os.remove(approval_path)
+    return res
+
 def poll_airlock(forced=False):
     """Event-driven opcode dispatcher."""
     try:
         # --- USER INTENT GUARD ---
         if is_user_busy():
-            # vibe_log("USER BUSY: Holding mutations...")
             return 0.5
 
         # --- DEPSGRAPH SENTINEL ---
-        # If Blender is busy 'compiling' modifiers, hold mutation
         if wait_for_depsgraph():
             return 0.1
 
@@ -119,8 +126,18 @@ def poll_airlock(forced=False):
                 data = json.load(file)
             
             opcode = data.get('type')
-            action = data.get('action')
             
+            # --- MANUAL APPROVAL GATE ---
+            # If the mutation is sensitive (e.g. Rig, Cleanup), wait for human
+            is_sensitive = data.get("intent") in ["RIG", "CLEANUP", "OPTIMIZE"]
+            if is_sensitive:
+                approval = check_manual_approval()
+                if approval == "WAITING":
+                    # vibe_log("WAITING_FOR_HUMAN_APPROVAL...")
+                    return 0.5
+                if approval == "REJECTED":
+                    raise Exception("MUTATION_REJECTED_BY_HUMAN")
+
             # --- TRANSACTION GATE ---
             if opcode != 'system_op' and not gate.active:
                 raise Exception("UNAUTHORIZED_MUTATION: No transaction active.")
@@ -128,10 +145,14 @@ def poll_airlock(forced=False):
             # --- OPCODE DISPATCH ---
             handler = OPCODE_MAP.get(opcode)
             if handler:
-                if opcode == 'system_op':
-                    result = handler(data, gate)
-                else:
-                    result = handler(data)
+                result = handler(data, gate) if opcode == 'system_op' else handler(data)
+                
+                # --- ADAPTIVE VIEWPORT FEEDBACK ---
+                # Take a thumbnail screenshot after successful mutation
+                screenshot_path = os.path.join(BASE_PATH, "captures", f"feedback_{f.replace('.json', '.png')}")
+                os.makedirs(os.path.dirname(screenshot_path), exist_ok=True)
+                bpy.ops.vibe.capture_viewport(filepath=screenshot_path)
+                if isinstance(result, dict): result["feedback_thumbnail"] = screenshot_path
             else:
                 raise Exception(f"INVALID_OPCODE: {opcode}")
 

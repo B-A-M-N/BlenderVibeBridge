@@ -38,19 +38,23 @@ def get_blender_status():
 def execute_intent(order):
     print(f"📦 Processing Intent: {order['intent']} (Opcode: {order['opcode']})")
 
-    # Construct the prompt for Flash
-    prompt_text = (
-        f"You are the Blender Operator. Write a Python script for Blender 3.6.\n"
-        f"Rules: Use Opcode {order['opcode']}.\n"
-        f"Never use forbidden modules (os, subprocess).\n"
-        f"Resolve target by vibe_uuid: {order.get('uuid', 'N/A')}.\n"
-        f"Intent: {order['intent']}\n"
-        f"Task: {order['description']}\n"
-        f"Return ONLY the raw Python code. No markdown, no explanations."
-    )
+    # Load the Operator Gem BIOS
+    gem_path = os.path.join(BASE_PATH, ".gemini", "gems", "blender-operator.md")
+    try:
+        with open(gem_path, "r") as f:
+            system_instruction = f.read()
+    except:
+        return {"status": "ERROR", "message": "Gem BIOS missing: blender-operator.md"}
 
+    # Construct the payload with system_instruction (Gems method)
     prompt = {
-        "contents": [{"parts": [{"text": prompt_text}]}]}
+        "system_instruction": {"parts": [{"text": system_instruction}]},
+        "contents": [{
+            "parts": [{
+                "text": f"TASK: {order['intent']}\nOpcode: {order['opcode']}\nUUID: {order.get('uuid')}\nDescription: {order['description']}"
+            }]
+        }]
+    }
 
     # 1. Generate Script via Gemini Flash
     try:

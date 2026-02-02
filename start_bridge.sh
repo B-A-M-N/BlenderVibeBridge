@@ -20,6 +20,28 @@ LOG_FILE="$PROJECT_DIR/server.log"
 
 echo "--- Starting Hardened BlenderVibeBridge ---"
 
+# Blender Discovery Logic
+BLENDER_PATH=$(python3 -c "import platform, subprocess; 
+system = platform.system(); 
+paths = ['C:\\\\Program Files\\\\Blender Foundation\\\\Blender 3.6\\\\blender.exe', '/Applications/Blender.app/Contents/MacOS/Blender', '/usr/bin/blender', 'blender']; 
+found = 'blender';
+for p in paths:
+    try: subprocess.run([p, '--version'], capture_output=True, check=True); found = p; break
+    except: continue
+print(found)")
+
+echo "[+] Using Blender: $BLENDER_PATH"
+
+# Headless Support
+if [ "$HEADLESS" = "true" ]; then
+    if command -v xvfb-run &> /dev/null; then
+        echo "[+] Headless Mode: ACTIVE (Using Xvfb)"
+        CMD="xvfb-run -a $CMD"
+    else
+        echo "[!] Error: xvfb-run not found. Headless mode may fail."
+    fi
+fi
+
 # Bubblewrap Sandbox Logic
 if [ "$USE_BWRAP" = "true" ]; then
     CMD="bwrap \

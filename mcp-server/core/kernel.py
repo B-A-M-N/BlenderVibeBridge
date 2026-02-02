@@ -76,6 +76,38 @@ class TransformMutation(VibeMutation):
 import psutil
 import socket
 
+def discover_blender():
+    """THE TRACKER: Automatically finds the Blender executable path across OSs."""
+    import platform
+    system = platform.system()
+    if system == "Windows":
+        paths = ["C:\\Program Files\\Blender Foundation\\Blender 3.6\\blender.exe", "C:\\Program Files\\Blender Foundation\\Blender 4.0\\blender.exe"]
+    elif system == "Darwin": # macOS
+        paths = ["/Applications/Blender.app/Contents/MacOS/Blender"]
+    else: # Linux
+        paths = ["/usr/bin/blender", "/usr/local/bin/blender", "blender"]
+        
+    for path in paths:
+        try:
+            # Check if command exists
+            subprocess.run([path, "--version"], capture_output=True, check=True)
+            return path
+        except: continue
+    return None
+
+def get_api_sentinel():
+    """THE SENTRY: Returns specific API mandates based on the Blender version."""
+    # This information is injected into the AI BIOS to prevent 2.7x hallucinations
+    return {
+        "engine": "Blender",
+        "version_target": "3.6 LTS",
+        "mandates": [
+            "Use 'bpy.ops.object.modifier_add(type=\"BOOLEAN\")' instead of legacy intersect tools.",
+            "Use 'context.evaluated_depsgraph_get()' for current scene data.",
+            "Material inputs must use 'nodes[\"Principled BSDF\"].inputs[\"Base Color\"]'."
+        ]
+    }
+
 def system_audit():
     """THE WARDEN: Detects and resolves zombie processes and port conflicts."""
     issues = []
