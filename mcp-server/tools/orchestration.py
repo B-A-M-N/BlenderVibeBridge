@@ -29,10 +29,14 @@ def register_orchestration_tools(mcp):
     @mcp.tool()
     def generate_sitrep() -> str:
         """THE OBSERVER: Generates a 360-degree Situation Report (SITREP).
-        Now includes 'Affordances' (valid next steps) and 'Reality Anchoring'."""
+        Includes 'Affordances', 'Reality Anchoring', and 'API Mandates'."""
         pulse = blender_request("GET", "/blender/heartbeat")
         telemetry = blender_request("GET", "/status")
         errors = get_blender_errors(5)
+        
+        # Get API Mandates for the current version
+        from ..core.kernel import get_api_sentinel
+        sentinel = get_api_sentinel()
         
         # --- AFFORDANCE MAPPING ---
         affordances = []
@@ -44,6 +48,7 @@ def register_orchestration_tools(mcp):
         sitrep = {
             "status": "GREEN" if pulse.get("responsive") else "RED",
             "engine": pulse,
+            "api_sentinel": sentinel,
             "scene_hash": telemetry.get("hash"),
             "affordances": affordances,
             "dirty_objects": telemetry.get("dirty_objects", []),

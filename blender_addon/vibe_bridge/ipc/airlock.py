@@ -92,7 +92,13 @@ def is_user_busy():
     return bpy.context.window_manager.is_interface_locked
 
 def check_manual_approval():
-    """Checks if the human has pressed APPROVE/REJECT on the Vibe Panel."""
+    """Checks for human approval or active Temporal Trust session."""
+    # 1. Check for Session Trust (5 minute window)
+    trust_expiry = bpy.context.scene.get("vibe_trusted", 0)
+    if time.time() < trust_expiry:
+        return "APPROVED"
+
+    # 2. Check for Manual Button Press
     approval_path = "/home/bamn/BlenderVibeBridge/vibe_queue/kernel/approval.txt"
     if not os.path.exists(approval_path): return "WAITING"
     with open(approval_path, "r") as f:

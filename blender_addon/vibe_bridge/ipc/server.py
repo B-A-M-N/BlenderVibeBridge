@@ -34,106 +34,263 @@ class VibeHandler(http.server.BaseHTTPRequestHandler):
         # Silence standard HTTP logging to keep console clean
         pass
 
-    def do_GET(self):
-        routes = {
-            "/blender/heartbeat": self.get_heartbeat,
-            "/blender/file_state": self.get_file_state,
-            "/blender/scene_state": self.get_scene_state,
-            "/blender/context_state": self.get_context_state,
-            "/blender/datablock_state": self.get_datablock_state,
-            "/blender/error_state": self.get_error_state,
-            "/status": self.get_status # Legacy support
-        }
-        
-        handler = routes.get(self.path)
-        if handler:
-            self.send_json_response(handler())
-        else:
-            self.send_error(404)
+        def do_GET(self):
 
-    def send_json_response(self, data):
-        # Inject schema version into every response
-        data["schema_version"] = "vibe.blender.v1.5.0"
-        self.send_response(200)
-        self.send_header("Content-type", "application/json")
-        self.end_headers()
-        self.wfile.write(json.dumps(data).encode())
+            routes = {
 
-    # --- INVARIANT HANDLERS ---
+                "/blender/heartbeat": self.get_heartbeat,
 
-    def get_heartbeat(self):
-        return {
-            "blender_pid": os.getpid(),
-            "responsive": True,
-            "modal_operator_active": SCENE_SNAPSHOT["modal_active"],
-            "session_hash": SESSION_ID,
-            "engine_time_ms": SCENE_SNAPSHOT["engine_time_ms"],
-            "monotonic_tick": SCENE_SNAPSHOT["monotonic_tick"],
-            "timestamp": time.time()
-        }
+                "/blender/file_state": self.get_file_state,
 
-    def get_file_state(self):
-        return {
-            "filepath": SCENE_SNAPSHOT["filepath"],
-            "is_dirty": SCENE_SNAPSHOT["is_dirty"],
-            "is_saved": bool(SCENE_SNAPSHOT["filepath"]),
-            "autosave_active": True
-        }
+                "/blender/scene_state": self.get_scene_state,
 
-    def get_scene_state(self):
-        return {
-            "scene_hash": SCENE_SNAPSHOT["hash"],
-            "object_count": SCENE_SNAPSHOT["object_count"],
-            "objects": SCENE_SNAPSHOT["objects"][:10] # Limit for performance
-        }
+                "/blender/context_state": self.get_context_state,
 
-    def get_context_state(self):
-        return {
-            "active_object": SCENE_SNAPSHOT["active_object"],
-            "object_mode": SCENE_SNAPSHOT["mode"]
-        }
+                "/blender/datablock_state": self.get_datablock_state,
 
-    def get_datablock_state(self):
-        return {
-            "meshes": SCENE_SNAPSHOT["meshes"],
-            "armatures": SCENE_SNAPSHOT["armatures"],
-            "materials": SCENE_SNAPSHOT["materials"],
-            "datablock_hash": SCENE_SNAPSHOT["hash"]
-        }
+                "/blender/error_state": self.get_error_state,
 
-    def get_error_state(self):
-        return {
-            "errors": SCENE_SNAPSHOT["errors"],
-            "error_hash": hashlib.md5(str(SCENE_SNAPSHOT["errors"]).encode()).hexdigest()
-        }
+                "/blender/addon_state": self.get_addon_state,
 
-    def do_POST(self):
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length)
-        data = json.loads(post_data)
-        
-        # All responses include schema version for Version Drift Invariance
-        schema_info = {"schema_version": "vibe.blender.v1.5.0"}
-        
-        if self.path == "/query":
-            # For now, return the latest cached hash
-            response = {
-                "hash": SCENE_SNAPSHOT["hash"],
-                "status": "SUCCESS",
-                "monotonic_tick": SCENE_SNAPSHOT["monotonic_tick"]
+                "/blender/integrity_test": self.get_integrity_test,
+
+                "/status": self.get_status # Legacy support
+
             }
-            response.update(schema_info)
-            self.send_json_response(response)
-        else:
-            self.send_error(404)
 
-    def get_status(self):
-        return {
-            "session": SESSION_ID,
-            "objects": SCENE_SNAPSHOT["object_count"],
-            "snapshot_age": time.time() - SCENE_SNAPSHOT["timestamp"],
-            "schema_version": "vibe.blender.v1.5.0"
-        }    socketserver.TCPServer.allow_reuse_address = True
+            
+
+            # Handle query parameters
+
+            path_base = self.path.split('?')[0]
+
+            handler = routes.get(path_base)
+
+            
+
+            if handler:
+
+                self.send_json_response(handler())
+
+            else:
+
+                self.send_error(404)
+
+    
+
+        def send_json_response(self, data):
+
+            # Inject schema version into every response
+
+            if isinstance(data, dict):
+
+                data["schema_version"] = "vibe.blender.v1.5.0"
+
+            self.send_response(200)
+
+            self.send_header("Content-type", "application/json")
+
+            self.end_headers()
+
+            self.wfile.write(json.dumps(data).encode())
+
+    
+
+        # --- INVARIANT HANDLERS ---
+
+    
+
+        def get_heartbeat(self):
+
+            return {
+
+                "blender_pid": os.getpid(),
+
+                "responsive": True,
+
+                "modal_operator_active": SCENE_SNAPSHOT["modal_active"],
+
+                "session_hash": SESSION_ID,
+
+                "engine_time_ms": SCENE_SNAPSHOT["engine_time_ms"],
+
+                "monotonic_tick": SCENE_SNAPSHOT["monotonic_tick"],
+
+                "timestamp": time.time()
+
+            }
+
+    
+
+        def get_file_state(self):
+
+            return {
+
+                "filepath": SCENE_SNAPSHOT["filepath"],
+
+                "is_dirty": SCENE_SNAPSHOT["is_dirty"],
+
+                "is_saved": bool(SCENE_SNAPSHOT["filepath"]),
+
+                "autosave_active": True
+
+            }
+
+    
+
+        def get_scene_state(self):
+
+            return {
+
+                "scene_hash": SCENE_SNAPSHOT["hash"],
+
+                "object_count": SCENE_SNAPSHOT["object_count"],
+
+                "objects": SCENE_SNAPSHOT["objects"][:10] # Limit for performance
+
+            }
+
+    
+
+        def get_context_state(self):
+
+            return {
+
+                "active_object": SCENE_SNAPSHOT["active_object"],
+
+                "object_mode": SCENE_SNAPSHOT["mode"]
+
+            }
+
+    
+
+        def get_datablock_state(self):
+
+            return {
+
+                "meshes": SCENE_SNAPSHOT["meshes"],
+
+                "armatures": SCENE_SNAPSHOT["armatures"],
+
+                "materials": SCENE_SNAPSHOT["materials"],
+
+                "datablock_hash": SCENE_SNAPSHOT["hash"]
+
+            }
+
+    
+
+        def get_error_state(self):
+
+            return {
+
+                "errors": SCENE_SNAPSHOT["errors"],
+
+                "error_hash": hashlib.md5(str(SCENE_SNAPSHOT["errors"]).encode()).hexdigest()
+
+            }
+
+    
+
+        def get_addon_state(self):
+
+            import addon_utils
+
+            from urllib.parse import urlparse, parse_qs
+
+            params = parse_qs(urlparse(self.path).query)
+
+            name = params.get('name', [None])[0]
+
+            if not name: return {"error": "NAME_REQUIRED"}
+
+            enabled = any(a.bl_info.get('name') == name or a.__name__ == name for a in addon_utils.modules() if addon_utils.check(a.__name__)[0])
+
+            return {"addon": name, "enabled": enabled}
+
+    
+
+        def get_integrity_test(self):
+
+            import bpy
+
+            from urllib.parse import urlparse, parse_qs
+
+            params = parse_qs(urlparse(self.path).query)
+
+            uuid = params.get('uuid', [None])[0]
+
+            obj = next((o for o in bpy.data.objects if o.get("vibe_uuid") == uuid), None)
+
+            if not obj: return {"status": "LOST"}
+
+            return {"status": "STABLE", "location": list(obj.location)}
+
+    
+
+        def do_POST(self):
+
+            content_length = int(self.headers['Content-Length'])
+
+            post_data = self.rfile.read(content_length)
+
+            data = json.loads(post_data)
+
+            
+
+            # All responses include schema version for Version Drift Invariance
+
+            schema_info = {"schema_version": "vibe.blender.v1.5.0"}
+
+            
+
+            if self.path == "/query":
+
+                # For now, return the latest cached hash
+
+                response = {
+
+                    "hash": SCENE_SNAPSHOT["hash"],
+
+                    "status": "SUCCESS",
+
+                    "monotonic_tick": SCENE_SNAPSHOT["monotonic_tick"]
+
+                }
+
+                response.update(schema_info)
+
+                self.send_json_response(response)
+
+            else:
+
+                self.send_error(404)
+
+    
+
+        def get_status(self):
+
+            return {
+
+                "session": SESSION_ID,
+
+                "hash": SCENE_SNAPSHOT["hash"],
+
+                "objects": SCENE_SNAPSHOT["objects"],
+
+                "dirty_objects": SCENE_SNAPSHOT["dirty_objects"],
+
+                "overlaps": SCENE_SNAPSHOT["overlaps"],
+
+                "blender_version": SCENE_SNAPSHOT.get("blender_version", []),
+
+                "snapshot_age": time.time() - SCENE_SNAPSHOT["timestamp"],
+
+                "schema_version": "vibe.blender.v1.5.0"
+
+            }
+
+        socketserver.TCPServer.allow_reuse_address = True
     try:
         with socketserver.TCPServer(("127.0.0.1", PORT), VibeHandler) as server:
             vibe_log(f"INVARIANCE SERVER STARTED ON PORT {PORT}")

@@ -75,6 +75,12 @@ def blender_request(method, path, data=None, is_mutation=False):
                     os.remove(outbox_file)
                     AuditLogger.log_mutation(method, path, data, resp)
                     if resp.get("status") == "ERROR":
+                        # Automatic Forensic Ingestion
+                        try:
+                            log_path = "/home/bamn/BlenderVibeBridge/bridge.log"
+                            with open(log_path, "r") as log_f:
+                                resp["forensic_context"] = "".join(log_f.readlines()[-5:])
+                        except: pass
                         monitor.enter_recovery()
                     return resp
                 except:

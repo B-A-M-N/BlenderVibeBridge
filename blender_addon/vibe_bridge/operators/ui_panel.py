@@ -2,6 +2,7 @@
 import bpy
 import os
 import json
+import time
 
 class VIBE_PT_Panel(bpy.types.Panel):
     bl_label = "Vibe Bridge Control"
@@ -27,14 +28,28 @@ class VIBE_PT_Panel(bpy.types.Panel):
         row = layout.row(align=True)
         row.operator("vibe.approve_mutation", text="APPROVE", icon='CHECKMARK')
         row.operator("vibe.reject_mutation", text="REJECT", icon='CANCEL')
+        
+        # Temporal Trust
+        layout.separator()
+        layout.operator("vibe.trust_session", text="TRUST (5 MINS)", icon='LOCKED' if not context.scene.get("vibe_trusted") else 'UNLOCKED')
+
+class VIBE_OT_Trust(bpy.types.Operator):
+    bl_idname = "vibe.trust_session"
+    bl_label = "Trust Session"
+    
+    def execute(self, context):
+        context.scene["vibe_trusted"] = time.time() + 300 # 5 Minute Trust
+        return {'FINISHED'}
 
 class VIBE_OT_Approve(bpy.types.Operator):
     bl_idname = "vibe.approve_mutation"
     bl_label = "Approve Mutation"
     
     def execute(self, context):
-        with open("/home/bamn/BlenderVibeBridge/vibe_queue/kernel/approval.txt", "w") as f:
+        p = "/home/bamn/BlenderVibeBridge/vibe_queue/kernel/approval.txt"
+        with open(p + ".tmp", "w") as f:
             f.write("APPROVED")
+        os.rename(p + ".tmp", p)
         return {'FINISHED'}
 
 class VIBE_OT_Capture(bpy.types.Operator):
@@ -55,8 +70,10 @@ class VIBE_OT_Reject(bpy.types.Operator):
     bl_label = "Reject Mutation"
     
     def execute(self, context):
-        with open("/home/bamn/BlenderVibeBridge/vibe_queue/kernel/approval.txt", "w") as f:
+        p = "/home/bamn/BlenderVibeBridge/vibe_queue/kernel/approval.txt"
+        with open(p + ".tmp", "w") as f:
             f.write("REJECTED")
+        os.rename(p + ".tmp", p)
         return {'FINISHED'}
 
 def register():
@@ -64,9 +81,11 @@ def register():
     bpy.utils.register_class(VIBE_OT_Approve)
     bpy.utils.register_class(VIBE_OT_Reject)
     bpy.utils.register_class(VIBE_OT_Capture)
+    bpy.utils.register_class(VIBE_OT_Trust)
 
 def unregister():
     bpy.utils.unregister_class(VIBE_PT_Panel)
     bpy.utils.unregister_class(VIBE_OT_Approve)
     bpy.utils.unregister_class(VIBE_OT_Reject)
     bpy.utils.unregister_class(VIBE_OT_Capture)
+    bpy.utils.unregister_class(VIBE_OT_Trust)

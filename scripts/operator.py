@@ -131,7 +131,12 @@ def main():
                     json.dump(result, f)
 
                 os.remove(task_path)
-                print(f"✅ Intent Complete: {out_name}")
+                
+                # Feedback Logging
+                thumb = result.get("result", {}).get("feedback_thumbnail")
+                msg = f"✅ Intent Complete: {out_name}"
+                if thumb: msg += f" | 📸 Feedback: {thumb}"
+                print(msg)
             except Exception as e:
                 print(f"❌ Critical Operator Error: {e}")
 
